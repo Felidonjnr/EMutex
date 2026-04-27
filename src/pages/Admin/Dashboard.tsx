@@ -1,0 +1,309 @@
+import { useState, useEffect } from 'react';
+import { collection, query, orderBy, limit, getDocs, getCountFromServer, addDoc, serverTimestamp, doc, setDoc } from 'firebase/firestore';
+import { db, handleFirestoreError, OperationType } from '../../lib/firebase';
+import AdminLayout from '../../components/layout/AdminLayout';
+import { Lead } from '../../types';
+import { Users, ShoppingBag, Clock, ArrowUpRight, TrendingUp, Sparkles, Database, ChevronRight, Settings } from 'lucide-react';
+import { formatDate, cn } from '../../lib/utils';
+import { motion } from 'framer-motion';
+import { Link } from 'react-router-dom';
+
+const DEMO_PRODUCTS = [
+  {
+    name: 'Ginseng Tonic Wine',
+    slug: 'ginseng-tonic-wine',
+    category: 'Energy & Vitality Support',
+    shortDescription: 'Support your daily energy and vitality with our premium ginseng-infused tonic.',
+    fullDescription: '# Premium Ginseng Tonic Wine\n\nOur Ginseng Tonic Wine is a carefully crafted wellness drink designed for adults who need a natural energy boost. Combining traditional ginseng roots with a smooth tonic base, it supports daily performance and overall well-being.\n\n### Key Features:\n- Naturally sourced Ginseng\n- Smooth, rich taste\n- Perfect for daily vitality\n\n### Usage:\nTake one small glass daily after meals.',
+    imageUrl: 'https://images.unsplash.com/photo-1556911223-e1236577549a?auto=format&fit=crop&q=80&w=800',
+    price: 'Confirm on WhatsApp',
+    availability: 'In Stock',
+    wellnessSupportPoints: ['Daily energy boost', 'Focus support', 'Natural vitality'],
+    benefits: ['Supports physical performance', 'Enhances mental clarity', 'Promotes overall well-being'],
+    bestFor: 'Busy professionals and active adults',
+    usageNote: '1 small glass daily',
+    featured: true,
+    showOnHomepage: true,
+    showInCatalogue: true,
+    visible: true,
+    productOrder: 1,
+  },
+  {
+    name: 'NMN Capsules',
+    slug: 'nmn-capsules',
+    category: 'Daily Wellness Support',
+    shortDescription: 'Advanced wellness support for cellular health and steady vitality.',
+    fullDescription: '# NMN Capsules\n\nSupport your body at the cellular level with our high-purity NMN capsules. Designed for longevity and daily wellness, these capsules are a staple for the modern health-conscious adult.',
+    imageUrl: 'https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?auto=format&fit=crop&q=80&w=800',
+    price: 'Confirm on WhatsApp',
+    availability: 'In Stock',
+    wellnessSupportPoints: ['Cellular health', 'Longevity support', 'Steady energy'],
+    benefits: ['Supports metabolism', 'Promotes cellular repair', 'Boosts daily energy levels'],
+    bestFor: 'Longevity-focused adults',
+    usageNote: '2 capsules daily before breakfast',
+    featured: false,
+    showOnHomepage: true,
+    showInCatalogue: true,
+    visible: true,
+    productOrder: 2,
+  },
+  {
+    name: 'Ganoderma Coffee',
+    slug: 'ganoderma-coffee',
+    category: 'Coffee, Tea & Routine Products',
+    shortDescription: 'A premium coffee blend infused with Ganoderma for daily balance.',
+    fullDescription: '# Ganoderma Coffee\n\nEnjoy the rich taste of coffee with the added wellness benefits of Ganoderma Lucidum. A perfect start to your daily routine, providing balance and energy without the jitters.',
+    imageUrl: 'https://images.unsplash.com/photo-1559056199-641a0ac8b55e?auto=format&fit=crop&q=80&w=800',
+    price: 'Confirm on WhatsApp',
+    availability: 'In Stock',
+    wellnessSupportPoints: ['Calm focus', 'Daily routine support', 'Lower acidity than regular coffee'],
+    benefits: ['Supports immune system', 'Balanced energy levels', 'Rich in antioxidants'],
+    bestFor: 'Coffee lovers seeking wellness',
+    usageNote: '1 cup in the morning',
+    featured: true,
+    showOnHomepage: true,
+    showInCatalogue: true,
+    visible: true,
+    productOrder: 3,
+  }
+];
+
+export default function AdminDashboard() {
+  const [stats, setStats] = useState({
+    totalProducts: 0,
+    totalLeads: 0,
+    newLeads: 0,
+  });
+  const [recentLeads, setRecentLeads] = useState<Lead[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [isSeeding, setIsSeeding] = useState(false);
+
+  const fetchDashboardData = async () => {
+    try {
+      setLoading(true);
+      const productsCount = await getCountFromServer(collection(db, 'products'));
+      const leadsCount = await getCountFromServer(collection(db, 'leads'));
+      
+      const recentLeadsQuery = query(collection(db, 'leads'), orderBy('createdAt', 'desc'), limit(5));
+      const recentSnapshot = await getDocs(recentLeadsQuery);
+      const leadsData = recentSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Lead));
+
+      setStats({
+        totalProducts: productsCount.data().count,
+        totalLeads: leadsCount.data().count,
+        newLeads: leadsData.filter(l => l.status === 'New').length,
+      });
+      setRecentLeads(leadsData);
+    } catch (error) {
+      handleFirestoreError(error, OperationType.GET, 'dashboard');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchDashboardData();
+  }, []);
+
+  const seedDemoData = async () => {
+    if (!confirm('This will seed demo products into your database. Continue?')) return;
+    try {
+      setIsSeeding(true);
+      for (const product of DEMO_PRODUCTS) {
+        await addDoc(collection(db, 'products'), {
+          ...product,
+          createdAt: serverTimestamp(),
+          updatedAt: serverTimestamp(),
+        });
+      }
+      alert('Demo products seeded successfully!');
+      fetchDashboardData();
+    } catch (error) {
+      handleFirestoreError(error, OperationType.CREATE, 'demo-seed');
+    } finally {
+      setIsSeeding(false);
+    }
+  };
+
+  const statCards = [
+    { name: 'Total Products', value: stats.totalProducts, icon: ShoppingBag, color: 'text-brand-emerald', bg: 'bg-brand-emerald/10' },
+    { name: 'Total Leads', value: stats.totalLeads, icon: Users, color: 'text-brand-gold', bg: 'bg-brand-gold/10' },
+    { name: 'New Leads', value: stats.newLeads, icon: TrendingUp, color: 'text-emerald-600', bg: 'bg-emerald-50' },
+  ];
+
+  return (
+    <AdminLayout>
+      <div className="space-y-10">
+        {/* welcome */}
+        <div className="space-y-1">
+          <h1 className="text-3xl font-serif">Welcome back, Admin</h1>
+          <p className="text-brand-grey">Here's what's happening with EMutex Nig today.</p>
+        </div>
+
+        {/* Stats Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {statCards.map((stat, i) => (
+            <motion.div
+              key={stat.name}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: i * 0.1 }}
+              className="card p-8 flex items-center justify-between"
+            >
+              <div className="space-y-1">
+                <p className="text-sm font-medium text-brand-grey uppercase tracking-wider">{stat.name}</p>
+                <p className="text-4xl font-bold text-brand-charcoal">{stat.value}</p>
+              </div>
+              <div className={cn("p-4 rounded-2xl", stat.bg)}>
+                <stat.icon className={stat.color} size={32} />
+              </div>
+            </motion.div>
+          ))}
+        </div>
+
+        {/* Initial Setup Info */}
+        {stats.totalProducts === 0 && (
+           <motion.div 
+             initial={{ opacity: 0, scale: 0.95 }}
+             animate={{ opacity: 1, scale: 1 }}
+             className="card p-8 bg-brand-gold/10 border-brand-gold/30 flex flex-col md:flex-row items-center gap-8"
+           >
+              <div className="w-20 h-20 rounded-full bg-brand-gold flex items-center justify-center text-white shrink-0 shadow-lg animate-bounce">
+                 <Database size={40} />
+              </div>
+              <div className="flex-grow space-y-2 text-center md:text-left">
+                 <h3 className="text-2xl font-serif text-brand-emerald">Launch Your Catalogue</h3>
+                 <p className="text-brand-grey max-w-xl">
+                   Your product database is currently empty. You can start by adding a new product manually or seed our initial demo products to see how the website looks.
+                 </p>
+              </div>
+              <div className="flex flex-col gap-3 shrink-0">
+                 <button 
+                   onClick={seedDemoData}
+                   disabled={isSeeding}
+                   className="btn-primary flex items-center justify-center gap-2 px-8 py-3 bg-brand-gold hover:bg-opacity-80 border-none"
+                 >
+                   {isSeeding ? "Seeding..." : (
+                     <>
+                        <Sparkles size={18} />
+                        Seed Demo Data
+                     </>
+                   )}
+                 </button>
+                 <Link to="/em-admin/products" className="btn-secondary text-center px-8 py-3 text-sm">
+                    Add First Product
+                 </Link>
+              </div>
+           </motion.div>
+        )}
+
+        <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
+          {/* Recent Leads */}
+          <div className="xl:col-span-2 space-y-6">
+            <div className="flex items-center justify-between">
+              <h3 className="text-xl font-bold font-serif flex items-center gap-2">
+                <Clock size={20} className="text-brand-gold" />
+                Recent Leads
+              </h3>
+              <Link to="/em-admin/leads" className="text-sm font-bold text-brand-emerald flex items-center gap-1 hover:text-brand-gold transition-all">
+                View All <ArrowUpRight size={16} />
+              </Link>
+            </div>
+            
+            <div className="card overflow-hidden">
+               <div className="overflow-x-auto">
+                <table className="w-full text-left">
+                  <thead className="bg-brand-mist/50 text-[10px] font-bold uppercase tracking-widest text-brand-grey">
+                    <tr>
+                      <th className="px-6 py-4">Customer</th>
+                      <th className="px-6 py-4">Product Interested</th>
+                      <th className="px-6 py-4">Date</th>
+                      <th className="px-6 py-4">Status</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-brand-champagne/10">
+                    {loading ? (
+                      [1, 2, 3].map(i => (
+                        <tr key={i} className="animate-pulse">
+                          <td colSpan={4} className="px-6 py-8 bg-white/50"></td>
+                        </tr>
+                      ))
+                    ) : recentLeads.length > 0 ? (
+                      recentLeads.map((lead) => (
+                        <tr key={lead.id} className="hover:bg-brand-mist/20 transition-colors">
+                          <td className="px-6 py-4">
+                            <div className="font-bold text-brand-charcoal">{lead.fullName}</div>
+                            <div className="text-xs text-brand-grey">{lead.whatsappNumber}</div>
+                          </td>
+                          <td className="px-6 py-4">
+                            <span className="inline-block px-2 py-0.5 rounded-full bg-brand-gold/10 text-brand-gold text-[10px] font-bold uppercase tracking-wider">
+                                {lead.productInterested}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4 text-xs text-brand-grey">
+                            {formatDate(lead.createdAt.toDate())}
+                          </td>
+                          <td className="px-6 py-4">
+                             <StatusBadge status={lead.status} />
+                          </td>
+                        </tr>
+                      ))
+                    ) : (
+                      <tr>
+                        <td colSpan={4} className="px-6 py-12 text-center text-brand-grey italic">No leads found yet.</td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+               </div>
+            </div>
+          </div>
+
+          {/* Quick Actions */}
+          <div className="space-y-6">
+            <h3 className="text-xl font-bold font-serif">Quick Actions</h3>
+            <div className="grid grid-cols-1 gap-4">
+               <Link to="/em-admin/products" className="card p-6 flex items-center gap-4 hover:border-brand-gold transition-all group">
+                  <div className="w-12 h-12 rounded-xl bg-brand-emerald text-white flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
+                    <ShoppingBag size={24} />
+                  </div>
+                  <div className="flex-grow">
+                    <h4 className="font-bold text-brand-emerald">Manage Products</h4>
+                    <p className="text-xs text-brand-grey">Update inventory & details</p>
+                  </div>
+                  <ChevronRight size={20} className="text-brand-champagne" />
+               </Link>
+               
+               <Link to="/em-admin/settings" className="card p-6 flex items-center gap-4 hover:border-brand-gold transition-all group">
+                  <div className="w-12 h-12 rounded-xl bg-brand-gold text-white flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
+                    <Settings size={24} />
+                  </div>
+                  <div className="flex-grow">
+                    <h4 className="font-bold text-brand-emerald">Site Settings</h4>
+                    <p className="text-xs text-brand-grey">WhatsApp, Hero, Tagline</p>
+                  </div>
+                  <ChevronRight size={20} className="text-brand-champagne" />
+               </Link>
+            </div>
+          </div>
+        </div>
+      </div>
+    </AdminLayout>
+  );
+}
+
+function StatusBadge({ status }: { status: string }) {
+  const colors: Record<string, string> = {
+    'New': 'bg-emerald-100 text-emerald-700',
+    'Contacted': 'bg-blue-100 text-blue-700',
+    'Interested': 'bg-purple-100 text-purple-700',
+    'Ordered': 'bg-brand-gold/20 text-brand-gold',
+    'Not Ready': 'bg-gray-100 text-gray-700',
+    'Follow Up Later': 'bg-orange-100 text-orange-700',
+  };
+  return (
+    <span className={cn("px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider", colors[status] || 'bg-gray-100 text-gray-700')}>
+      {status}
+    </span>
+  );
+}

@@ -1,0 +1,105 @@
+{
+  "entities": {
+    "Product": {
+      "title": "Product",
+      "description": "Wellness product offered by EMutex Nig",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "slug": { "type": "string" },
+        "category": { "type": "string" },
+        "shortDescription": { "type": "string" },
+        "fullDescription": { "type": "string" },
+        "imageUrl": { "type": "string" },
+        "galleryImages": { "type": "array" },
+        "price": { "type": "string" },
+        "availability": { "type": "string" },
+        "wellnessSupportPoints": { "type": "array" },
+        "benefits": { "type": "array" },
+        "bestFor": { "type": "string" },
+        "usageNote": { "type": "string" },
+        "disclaimer": { "type": "string" },
+        "faq": { "type": "array" },
+        "relatedProductIds": { "type": "array" },
+        "relatedBundleIds": { "type": "array" },
+        "featured": { "type": "boolean" },
+        "showOnHomepage": { "type": "boolean" },
+        "showInCatalogue": { "type": "boolean" },
+        "visible": { "type": "boolean" },
+        "productOrder": { "type": "number" },
+        "whatsappCtaText": { "type": "string" },
+        "whatsappMessage": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["name", "slug", "category", "imageUrl"]
+    },
+    "Lead": {
+      "title": "Lead",
+      "description": "User lead captured via product page pop-up",
+      "type": "object",
+      "properties": {
+        "fullName": { "type": "string" },
+        "whatsappNumber": { "type": "string" },
+        "location": { "type": "string" },
+        "productInterested": { "type": "string" },
+        "productSlug": { "type": "string" },
+        "sourcePage": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "status": { "type": "string", "enum": ["New", "Contacted", "Interested", "Ordered", "Not Ready", "Follow Up Later"] },
+        "notes": { "type": "string" }
+      },
+      "required": ["fullName", "whatsappNumber", "productInterested"]
+    },
+    "Setting": {
+      "title": "Setting",
+      "description": "Global application settings",
+      "type": "object",
+      "properties": {
+        "whatsappNumber": { "type": "string" },
+        "heroHeadline": { "type": "string" },
+        "heroSubheadline": { "type": "string" },
+        "tagline": { "type": "string" },
+        "locationText": { "type": "string" },
+        "finalCtaText": { "type": "string" },
+        "defaultWhatsappMessage": { "type": "string" },
+        "socialMediaLinks": { "type": "object" },
+        "businessAddress": { "type": "string" },
+        "deliveryNote": { "type": "string" }
+      }
+    },
+    "Category": {
+      "title": "Category",
+      "description": "Product categories",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "description": { "type": "string" },
+        "order": { "type": "number" }
+      }
+    }
+  },
+  "firestore": {
+    "products/{productId}": {
+      "schema": "Product",
+      "description": "Store of all wellness products"
+    },
+    "leads/{leadId}": {
+      "schema": "Lead",
+      "description": "Captured customer leads"
+    },
+    "settings/{settingId}": {
+      "schema": "Setting",
+      "description": "Configuration settings"
+    },
+    "categories/{categoryId}": {
+      "schema": "Category",
+      "description": "Product category organization"
+    },
+    "admins/{adminId}": {
+      "schema": { "type": "object", "properties": { "role": { "type": "string" } } },
+      "description": "System administrators"
+    }
+  }
+}

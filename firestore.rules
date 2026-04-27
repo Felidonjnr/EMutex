@@ -1,0 +1,81 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Default deny
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Global Helpers
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isEmailVerified() {
+      return isSignedIn() && request.auth.token.email_verified == true;
+    }
+
+    function isAdmin() {
+      return isSignedIn() && exists(/databases/$(database)/documents/admins/$(request.auth.uid));
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    // Product Validation
+    function isValidProduct(data) {
+      return data.keys().hasAll(['name', 'slug', 'category', 'imageUrl'])
+        && data.name is string && data.name.size() > 0 && data.name.size() <= 200
+        && data.slug is string && data.slug.size() > 0 && data.slug.size() <= 200
+        && data.category is string
+        && data.imageUrl is string;
+    }
+
+    match /products/{productId} {
+      allow read: if resource.data.visible == true || isAdmin();
+      allow create, update, delete: if isAdmin() && isValidProduct(incoming());
+    }
+
+    match /categories/{categoryId} {
+      allow read: if true;
+      allow create, update, delete: if isAdmin();
+    }
+
+    match /settings/{settingId} {
+      allow read: if true;
+      allow create, update, delete: if isAdmin();
+    }
+
+    // Lead Validation
+    function isValidLead(data) {
+      return data.keys().hasAll(['fullName', 'whatsappNumber', 'productInterested', 'productSlug', 'sourcePage', 'status', 'createdAt'])
+        && data.fullName is string && data.fullName.size() > 0 && data.fullName.size() <= 200
+        && data.whatsappNumber is string && data.whatsappNumber.size() > 0 && data.whatsappNumber.size() <= 50
+        && data.productInterested is string && data.productInterested.size() > 0
+        && data.status in ['New', 'Contacted', 'Interested', 'Ordered', 'Not Ready', 'Follow Up Later']
+        && data.createdAt == request.time;
+    }
+
+    match /leads/{leadId} {
+      // Only admin can list/read leads
+      allow read, list: if isAdmin();
+      // Public can create leads
+      allow create: if isValidLead(incoming()) && (incoming().fullName.size() < 1000); // basic size limit
+      allow update, delete: if isAdmin();
+    }
+
+    match /admins/{adminId} {
+      allow read: if isSignedIn() && request.auth.uid == adminId;
+      allow write: if false; // Only manageable through console or initial setup
+    }
+  }
+}
