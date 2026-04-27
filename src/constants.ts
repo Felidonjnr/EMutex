@@ -1,7 +1,7 @@
 import { WellnessNeed } from './types';
 
 export const DEFAULT_SETTINGS = {
-  whatsappNumber: '2348000000000', // Placeholder, user will update in admin
+  whatsappNumber: import.meta.env.VITE_WHATSAPP_NUMBER || '2348000000000',
   heroHeadline: 'Premium Wellness Support for Better Living',
   heroSubheadline: 'Carefully selected wellness and vitality products for Nigerian adults who want daily energy support, body balance, confidence, and better self-care.',
   tagline: 'EMutex Nig — Wellness Support for Better Living',

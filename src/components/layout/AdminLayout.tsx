@@ -24,6 +24,12 @@ const sidebarLinks = [
   { name: 'Settings', href: '/em-admin/settings', icon: Settings },
 ];
 
+// Admin email allowlist from environment variable
+const ADMIN_EMAILS = (import.meta.env.VITE_ADMIN_EMAILS || '')
+  .split(',')
+  .map((email: string) => email.trim().toLowerCase())
+  .filter((email: string) => email.length > 0);
+
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
@@ -31,15 +37,20 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const location = useLocation();
   const navigate = useNavigate();
 
+  const isAdminEmail = (userEmail: string | null) => {
+    if (!userEmail) return false;
+    return ADMIN_EMAILS.includes(userEmail.toLowerCase());
+  };
+
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, async (user) => {
       if (user) {
-        const adminDoc = await getDoc(doc(db, 'admins', user.uid));
-        if (adminDoc.exists()) {
+        if (isAdminEmail(user.email)) {
           setIsAdmin(true);
           setLoading(false);
         } else {
           navigate('/em-admin');
+          await signOut(auth);
         }
       } else {
         navigate('/em-admin');
@@ -173,9 +184,17 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
            <div className="flex items-center gap-4">
               <div className="hidden sm:flex flex-col items-end">
                 <span className="text-xs font-bold text-brand-gold uppercase tracking-tighter">System Administrator</span>
-                <span className="text-sm font-medium text-brand-charcoal">{auth.currentUser?.displayName}</span>
+                <span className="text-sm font-medium text-brand-charcoal truncate max-w-[150px]">
+                  {auth.currentUser?.displayName || auth.currentUser?.email?.split('@')[0] || 'Admin'}
+                </span>
               </div>
-              <img src={auth.currentUser?.photoURL || ''} alt="avatar" className="w-10 h-10 rounded-full border-2 border-brand-gold shadow-sm" />
+              <div className="w-10 h-10 rounded-full border-2 border-brand-gold shadow-sm bg-brand-emerald flex items-center justify-center text-white font-bold text-xs">
+                {auth.currentUser?.photoURL ? (
+                  <img src={auth.currentUser.photoURL} alt="avatar" className="w-full h-full rounded-full object-cover" />
+                ) : (
+                  <span>{(auth.currentUser?.email?.[0] || 'A').toUpperCase()}</span>
+                )}
+              </div>
            </div>
         </header>
 

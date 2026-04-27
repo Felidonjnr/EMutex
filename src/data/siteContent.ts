@@ -61,7 +61,7 @@ export const siteContent = {
     privacyNote: 'Your details are used only to follow up on your product interest.',
   },
   contact: {
-    whatsappNumber: '2348000000000', // Update in Admin
+    whatsappNumber: import.meta.env.VITE_WHATSAPP_NUMBER || '2348000000000', // Update in Admin
     location: 'Akwa Ibom State, Nigeria',
     serving: 'Serving wellness-conscious adults across Nigeria',
     address: 'Akwa Ibom State, Nigeria',
