@@ -18,6 +18,10 @@ export default function ProductDetail() {
 
   useEffect(() => {
     async function fetchProduct() {
+      if (!db) {
+        setLoading(false);
+        return;
+      }
       try {
         setLoading(true);
         const productsRef = collection(db, 'products');

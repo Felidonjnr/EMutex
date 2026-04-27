@@ -17,6 +17,10 @@ export default function Products() {
 
   useEffect(() => {
     async function fetchProducts() {
+      if (!db) {
+        setLoading(false);
+        return;
+      }
       try {
         setLoading(true);
         const productsRef = collection(db, 'products');

@@ -36,6 +36,11 @@ export default function AdminLogin() {
       setError('Firebase configuration is missing. Please check environment variables (VITE_FIREBASE_API_KEY, VITE_FIREBASE_PROJECT_ID, VITE_ADMIN_EMAILS).');
     }
 
+    if (!auth) {
+      setLoading(false);
+      return;
+    }
+
     const unsub = onAuthStateChanged(auth, async (user) => {
       if (user) {
         if (isAdminEmail(user.email)) {

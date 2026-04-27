@@ -43,6 +43,10 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   };
 
   useEffect(() => {
+    if (!auth) {
+      setLoading(false);
+      return;
+    }
     const unsub = onAuthStateChanged(auth, async (user) => {
       if (user) {
         if (isAdminEmail(user.email)) {

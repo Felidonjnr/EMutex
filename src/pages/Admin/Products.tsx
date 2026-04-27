@@ -21,6 +21,10 @@ export default function AdminProducts() {
   }, []);
 
   async function fetchProducts() {
+    if (!db) {
+      setLoading(false);
+      return;
+    }
     try {
       setLoading(true);
       const q = query(collection(db, 'products'), orderBy('productOrder', 'asc'));

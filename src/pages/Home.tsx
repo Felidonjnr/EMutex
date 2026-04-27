@@ -24,6 +24,10 @@ export default function Home() {
 
   useEffect(() => {
     async function fetchFeatured() {
+      if (!db) {
+        setLoading(false);
+        return;
+      }
       try {
         const productsRef = collection(db, 'products');
         const q = query(

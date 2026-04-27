@@ -17,14 +17,25 @@ const firebaseConfig = {
 const firestoreDatabaseId = import.meta.env.VITE_FIREBASE_DATABASE_ID || '(default)';
 
 // Initialize Firebase
-const app = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig);
+let app;
+try {
+  if (!firebaseConfig.apiKey || firebaseConfig.apiKey === 'undefined') {
+    console.warn('Firebase API Key is missing. Please check your environment variables.');
+  }
+  app = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig);
+} catch (error) {
+  console.error('Firebase initialization failed:', error);
+  // We create a dummy app or handle it gracefully to prevent total crash
+  // but usually initializeApp throws if config is totally invalid
+}
 
 // Initialize services
-export const db = getFirestore(app, firestoreDatabaseId === '(default)' ? undefined : firestoreDatabaseId);
-export const auth = getAuth(app);
-export const storage = getStorage(app);
+export const db = app ? getFirestore(app, firestoreDatabaseId === '(default)' ? undefined : firestoreDatabaseId) : null as any;
+export const auth = app ? getAuth(app) : null as any;
+export const storage = app ? getStorage(app) : null as any;
 
 async function testConnection() {
+  if (!db) return;
   try {
     await getDocFromServer(doc(db, 'test', 'connection'));
     console.log('Firebase connection successful');
@@ -35,7 +46,8 @@ async function testConnection() {
   }
 }
 
-testConnection();
+// Do not call testConnection() at top level to avoid crashing during load if config is partial
+// testConnection();
 
 export enum OperationType {
   CREATE = 'create',

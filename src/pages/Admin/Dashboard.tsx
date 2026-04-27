@@ -79,6 +79,10 @@ export default function AdminDashboard() {
   const [isSeeding, setIsSeeding] = useState(false);
 
   const fetchDashboardData = async () => {
+    if (!db) {
+      setLoading(false);
+      return;
+    }
     try {
       setLoading(true);
       const productsCount = await getCountFromServer(collection(db, 'products'));
