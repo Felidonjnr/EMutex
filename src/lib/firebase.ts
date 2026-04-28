@@ -13,24 +13,26 @@ const firebaseConfig = {
   appId: import.meta.env.VITE_FIREBASE_APP_ID,
 };
 
-// Database ID for Firestore (specifically for AI Studio/Enterprise setups)
-const firestoreDatabaseId = import.meta.env.VITE_FIREBASE_DATABASE_ID || '(default)';
-
 // Initialize Firebase
 let app;
 try {
-  if (!firebaseConfig.apiKey || firebaseConfig.apiKey === 'undefined') {
-    console.warn('Firebase API Key is missing. Please check your environment variables.');
+  if (firebaseConfig.apiKey && firebaseConfig.apiKey !== 'undefined') {
+    app = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig);
   }
-  app = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig);
 } catch (error) {
   console.error('Firebase initialization failed:', error);
-  // We create a dummy app or handle it gracefully to prevent total crash
-  // but usually initializeApp throws if config is totally invalid
 }
 
-// Initialize services
-export const db = app ? getFirestore(app, firestoreDatabaseId === '(default)' ? undefined : firestoreDatabaseId) : null as any;
+// Database ID for Firestore (specifically for AI Studio/Enterprise setups)
+let dbId = import.meta.env.VITE_FIREBASE_DATABASE_ID || '(default)';
+
+// Safety check: If the user accidentally provided a Realtime DB URL as the database ID
+if (dbId.startsWith('http')) {
+  console.warn('VITE_FIREBASE_DATABASE_ID appears to be a URL. Falling back to (default).');
+  dbId = '(default)';
+}
+
+export const db = app ? getFirestore(app, dbId === '(default)' ? undefined : dbId) : null as any;
 export const auth = app ? getAuth(app) : null as any;
 export const storage = app ? getStorage(app) : null as any;
 
