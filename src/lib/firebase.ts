@@ -3,21 +3,38 @@ import { getAuth } from 'firebase/auth';
 import { getFirestore, doc, getDocFromServer } from 'firebase/firestore';
 import { getStorage } from 'firebase/storage';
 
-import firebaseConfig from '../../firebase-applet-config.json';
+// Firebase configuration from environment variables
+const firebaseConfig = {
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+  appId: import.meta.env.VITE_FIREBASE_APP_ID,
+};
 
 // Initialize Firebase
 let app;
 try {
-  // Use config from JSON file
-  app = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig);
-  console.log('Firebase initialized with project:', firebaseConfig.projectId);
+  if (firebaseConfig.apiKey && firebaseConfig.apiKey !== 'undefined') {
+    app = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig);
+    console.log('Firebase initialized with project:', firebaseConfig.projectId);
+  } else {
+    console.warn('Firebase API Key is missing. If you are in AI Studio, please check your environment variables in Settings. If you are deploying, ensure VITE_FIREBASE_* variables are set.');
+  }
 } catch (error) {
   console.error('Firebase initialization failed:', error);
 }
 
 // Initialize services
-// Prefer internal config ID if available
-const dbId = (firebaseConfig as any).firestoreDatabaseId || '(default)';
+// Prefer environment variable for database ID (important for AI Studio/Enterprise setups)
+let dbId = import.meta.env.VITE_FIREBASE_DATABASE_ID || '(default)';
+
+// Safety check: If the user accidentally provided a Realtime DB or other URL as the database ID
+if (dbId && dbId.startsWith('http')) {
+  console.warn('VITE_FIREBASE_DATABASE_ID appears to be a URL. Falling back to (default).');
+  dbId = '(default)';
+}
 
 console.log('Using Firestore Database ID:', dbId);
 
