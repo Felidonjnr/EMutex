@@ -27,20 +27,22 @@ export default function Navbar() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between h-20 items-center">
           <div className="flex-shrink-0">
-            <Link to="/" className="flex items-center gap-3">
-              <img
-                src={siteContent.brand.logoPath}
-                alt={`${siteContent.brand.name} Logo`}
-                className="h-9 md:h-11 w-auto object-contain"
-                onError={(e) => {
-                  (e.target as HTMLImageElement).style.display = 'none';
-                }}
-              />
-              <div className="leading-tight">
-                <p className="text-lg font-bold text-[#0E3B2E]">
+            <Link to="/" className="flex items-center gap-4 group">
+              <div className="relative">
+                <img
+                  src={siteContent.brand.logoPath}
+                  alt={`${siteContent.brand.name} Logo`}
+                  className="h-10 md:h-12 w-auto object-contain transition-transform group-hover:scale-105"
+                  onError={(e) => {
+                    (e.target as HTMLImageElement).style.display = 'none';
+                  }}
+                />
+              </div>
+              <div className="flex flex-col">
+                <h1 className="text-lg md:text-xl font-bold text-[#0E3B2E] tracking-tight leading-none mb-1">
                   {siteContent.brand.name}
-                </p>
-                <p className="hidden md:block text-[10px] text-[#6F675B] uppercase tracking-wider font-medium">
+                </h1>
+                <p className="hidden md:block text-[10px] text-brand-emerald/70 uppercase tracking-[0.2em] font-bold leading-none">
                   {siteContent.brand.tagline}
                 </p>
               </div>

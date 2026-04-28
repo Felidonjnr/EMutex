@@ -1,12 +1,12 @@
 export const siteContent = {
   brand: {
     name: 'EMutex Nig',
-    tagline: 'Wellness Support for Better Living',
-    logoPath: '/images/emutex-logo.png',
+    tagline: 'wellness products for better living',
+    logoPath: 'https://res.cloudinary.com/drcroxtgs/image/upload/v1777358194/Untitled_design_sf3dwg.png',
   },
   hero: {
     label: 'Akwa Ibom-based wellness brand',
-    headline: 'Premium Wellness Support for Better Living',
+    headline: 'Premium wellness products for better living',
     subheadline: 'Carefully selected wellness and vitality products for Nigerian adults who want daily energy support, body balance, confidence, and better self-care.',
     ctaPrimary: 'View Products',
     ctaSecondary: 'WhatsApp Us',

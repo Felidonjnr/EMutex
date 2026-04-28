@@ -27,16 +27,18 @@ try {
 }
 
 // Initialize services
-// Prefer environment variable for database ID (important for AI Studio/Enterprise setups)
+// Database ID for Firestore (specifically for AI Studio/Enterprise setups)
 let dbId = import.meta.env.VITE_FIREBASE_DATABASE_ID || '(default)';
 
 // Safety check: If the user accidentally provided a Realtime DB or other URL as the database ID
 if (dbId && dbId.startsWith('http')) {
   console.warn('VITE_FIREBASE_DATABASE_ID appears to be a URL. Falling back to (default).');
+  console.warn('NOTE: A Firestore Database ID is a simple name (e.g. "(default)" or "my-db"), not a URL starting with https://. Please check your AI Studio Settings.');
   dbId = '(default)';
 }
 
-console.log('Using Firestore Database ID:', dbId);
+console.log('Firebase Target Project ID:', firebaseConfig.projectId);
+console.log('Firebase Target Database ID:', dbId);
 
 export const db = app ? getFirestore(app, (dbId === '(default)' || !dbId) ? undefined : dbId) : null as any;
 export const auth = app ? getAuth(app) : null as any;
@@ -45,17 +47,21 @@ export const storage = app ? getStorage(app) : null as any;
 async function testConnection() {
   if (!db) return;
   try {
-    // Try to read a path that is allowed in rules (e.g., settings/site)
-    const testDoc = doc(db, 'settings', 'site');
+    // Try to reach the backend by performing a simple getDoc
+    // We use settings/site as a likely path, but truly any path allowed by rules will do
+    const testDoc = doc(db, '_connection_test', 'ping');
     await getDocFromServer(testDoc);
-    console.log('Firebase connection test successful');
+    console.log('✅ Firestore connection reachability test successful');
   } catch (error: any) {
-    console.error('Firebase connection test failed:', error.code, error.message);
-    if (error.code === 'permission-denied') {
-      console.warn("Connection test got permission denied. This is expected if 'settings/site' is not yet created, but server was reached.");
-    } else if (error.message.includes('the client is offline') || error.message.includes('failed-precondition')) {
-      console.warn("Firestore reports offline. This could be a configuration issue or the database instance is still being provisioned.");
-    }
+    console.group('❌ Firestore Connection Error Details');
+    console.error('Error Code:', error.code);
+    console.error('Error Message:', error.message);
+    console.info('Checklist:');
+    console.info('1. Project ID: Is "' + firebaseConfig.projectId + '" correct? Check Project Settings in Firebase Console.');
+    console.info('2. Firestore Enabled: Go to Build > Firestore Database in the Firebase Console and ensure it is created.');
+    console.info('3. Database ID: Is "' + dbId + '" correct? Most projects use "(default)", but AI Studio Enterprise projects often use a custom ID.');
+    console.info('4. Environment Variables: Ensure all VITE_FIREBASE_* variables are set in the AI Studio Settings menu.');
+    console.groupEnd();
   }
 }
 
