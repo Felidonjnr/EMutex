@@ -76,6 +76,11 @@ service cloud.firestore {
       allow update, delete: if isAdmin();
     }
 
+    match /wellnessNeeds/{needId} {
+      allow read: if true;
+      allow create, update, delete: if isAdmin();
+    }
+
     match /admins/{adminId} {
       allow read: if isSignedIn() && request.auth.uid == adminId;
       allow write: if false; // Only manageable through console or initial setup

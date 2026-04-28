@@ -48,6 +48,7 @@ interface ProductFormProps {
 export default function ProductForm({ product, onClose, onSuccess }: ProductFormProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [activeTab, setActiveTab] = useState<'basic' | 'content' | 'display' | 'whatsapp'>('basic');
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
   const { register, handleSubmit, control, formState: { errors }, watch, setValue } = useForm<any>({
     resolver: zodResolver(productSchema) as any,
@@ -80,10 +81,15 @@ export default function ProductForm({ product, onClose, onSuccess }: ProductForm
   const onSubmit = async (data: any) => {
     try {
       setIsSubmitting(true);
+      setSubmitError(null);
       const payload = {
         ...data,
         updatedAt: serverTimestamp(),
       };
+
+      if (!db) {
+        throw new Error("Database not initialized. Please check your Firebase configuration.");
+      }
 
       if (product) {
         await updateDoc(doc(db, 'products', product.id), payload);
@@ -94,8 +100,12 @@ export default function ProductForm({ product, onClose, onSuccess }: ProductForm
         });
       }
       onSuccess();
-    } catch (error) {
-      handleFirestoreError(error, product ? OperationType.UPDATE : OperationType.CREATE, 'products');
+    } catch (error: any) {
+      console.error('Product save error:', error);
+      setSubmitError(error.message || String(error));
+      try {
+        handleFirestoreError(error, product ? OperationType.UPDATE : OperationType.CREATE, 'products');
+      } catch (e) {}
     } finally {
       setIsSubmitting(false);
     }
@@ -138,6 +148,12 @@ export default function ProductForm({ product, onClose, onSuccess }: ProductForm
 
         {/* Form Body */}
         <form id="product-form" onSubmit={handleSubmit(onSubmit)} className="flex-grow overflow-y-auto p-8 lg:p-12 space-y-12">
+          {submitError && (
+            <div className="p-4 bg-red-100 border border-red-200 text-red-700 rounded-xl mb-6">
+              <p className="font-bold text-sm">Save Failed:</p>
+              <pre className="text-xs whitespace-pre-wrap mt-1">{submitError}</pre>
+            </div>
+          )}
           {Object.keys(errors).length > 0 && (
             <div className="p-4 bg-red-50 border border-red-200 rounded-xl">
               <p className="text-red-700 font-bold text-sm mb-2">Please fix the following errors:</p>

@@ -3,53 +3,49 @@ import { getAuth } from 'firebase/auth';
 import { getFirestore, doc, getDocFromServer } from 'firebase/firestore';
 import { getStorage } from 'firebase/storage';
 
-// Firebase configuration from environment variables
-const firebaseConfig = {
-  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
-  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
-  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
-  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
-  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
-  appId: import.meta.env.VITE_FIREBASE_APP_ID,
-};
+import firebaseConfig from '../../firebase-applet-config.json';
 
 // Initialize Firebase
 let app;
 try {
-  if (firebaseConfig.apiKey && firebaseConfig.apiKey !== 'undefined') {
-    app = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig);
-  }
+  // Use config from JSON file
+  app = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig);
+  console.log('Firebase initialized with project:', firebaseConfig.projectId);
 } catch (error) {
   console.error('Firebase initialization failed:', error);
 }
 
-// Database ID for Firestore (specifically for AI Studio/Enterprise setups)
-let dbId = import.meta.env.VITE_FIREBASE_DATABASE_ID || '(default)';
+// Initialize services
+// Prefer internal config ID if available
+const dbId = (firebaseConfig as any).firestoreDatabaseId || '(default)';
 
-// Safety check: If the user accidentally provided a Realtime DB URL as the database ID
-if (dbId.startsWith('http')) {
-  console.warn('VITE_FIREBASE_DATABASE_ID appears to be a URL. Falling back to (default).');
-  dbId = '(default)';
-}
+console.log('Using Firestore Database ID:', dbId);
 
-export const db = app ? getFirestore(app, dbId === '(default)' ? undefined : dbId) : null as any;
+export const db = app ? getFirestore(app, (dbId === '(default)' || !dbId) ? undefined : dbId) : null as any;
 export const auth = app ? getAuth(app) : null as any;
 export const storage = app ? getStorage(app) : null as any;
 
 async function testConnection() {
   if (!db) return;
   try {
-    await getDocFromServer(doc(db, 'test', 'connection'));
-    console.log('Firebase connection successful');
-  } catch (error) {
-    if (error instanceof Error && error.message.includes('the client is offline')) {
-      console.error("Please check your Firebase configuration.");
+    // Try to read a path that is allowed in rules (e.g., settings/site)
+    const testDoc = doc(db, 'settings', 'site');
+    await getDocFromServer(testDoc);
+    console.log('Firebase connection test successful');
+  } catch (error: any) {
+    console.error('Firebase connection test failed:', error.code, error.message);
+    if (error.code === 'permission-denied') {
+      console.warn("Connection test got permission denied. This is expected if 'settings/site' is not yet created, but server was reached.");
+    } else if (error.message.includes('the client is offline') || error.message.includes('failed-precondition')) {
+      console.warn("Firestore reports offline. This could be a configuration issue or the database instance is still being provisioned.");
     }
   }
 }
 
-// Do not call testConnection() at top level to avoid crashing during load if config is partial
-// testConnection();
+// Call test connection to verify state
+if (app) {
+  testConnection();
+}
 
 export enum OperationType {
   CREATE = 'create',
