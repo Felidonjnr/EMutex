@@ -3,7 +3,7 @@ import { collection, query, orderBy, limit, getDocs, getCountFromServer, addDoc,
 import { db, handleFirestoreError, OperationType } from '../../lib/firebase';
 import AdminLayout from '../../components/layout/AdminLayout';
 import { Lead } from '../../types';
-import { Users, ShoppingBag, Clock, ArrowUpRight, TrendingUp, Sparkles, Database, ChevronRight, Settings } from 'lucide-react';
+import { Users, ShoppingBag, Clock, ArrowUpRight, TrendingUp, Sparkles, Database, ChevronRight, Settings, Loader2 } from 'lucide-react';
 import { formatDate, cn } from '../../lib/utils';
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
@@ -68,6 +68,31 @@ const DEMO_PRODUCTS = [
   }
 ];
 
+const DEMO_LEADS = [
+  { fullName: 'John Doe', whatsappNumber: '+2348011223344', location: 'Lagos', productInterested: 'Ginseng Tonic Wine', productSlug: 'ginseng-tonic-wine', status: 'New', notes: 'Interested in bulk purchase.', createdAt: serverTimestamp() },
+  { fullName: 'Jane Smith', whatsappNumber: '+2347055667788', location: 'Abuja', productInterested: 'NMN Capsules', productSlug: 'nmn-capsules', status: 'Contacted', notes: 'Asked about dosage.', createdAt: serverTimestamp() },
+  { fullName: 'Ahmed Musa', whatsappNumber: '+2349033221100', location: 'Kano', productInterested: 'Ganoderma Coffee', productSlug: 'ganoderma-coffee', status: 'Interested', notes: 'Wants to know if you deliver to Kano.', createdAt: serverTimestamp() },
+];
+
+const DEMO_WELLNESS_NEEDS = [
+  { title: 'Energy & Vitality', description: 'Natural solutions to boost your daily performance.', buttonText: 'Explore Energy Boosters', whatsappTopic: 'Energy & Vitality' },
+  { title: 'Sleep & Relaxation', description: 'Restorative products for a better night rest.', buttonText: 'Improve My Sleep', whatsappTopic: 'Sleep & Relaxation' },
+  { title: 'Immune Support', description: 'Strengthen your body natural defenses.', buttonText: 'Boost Immunity', whatsappTopic: 'Immune Support' },
+];
+
+const INITIAL_SETTINGS = {
+  whatsappNumber: '+2341234567890',
+  heroHeadline: 'Experience Holistic Wellness with EMutex Nig.',
+  heroSubheadline: 'Your trusted partner for premium herbal remedies and health supplements curated for your vitality.',
+  tagline: 'Embrace Nature, Empower Health.',
+  locationText: 'Direct Delivery Across Nigeria',
+  finalCtaText: 'Start Your Journey to Better Health Today',
+  defaultWhatsappMessage: 'Hello EMutex Nig, I would like to inquire about your wellness products.',
+  businessAddress: 'Lagos, Nigeria',
+  deliveryNote: 'We deliver nationwide within 2-5 business days.',
+  socialMediaLinks: { facebook: 'https://facebook.com/emutexnig', instagram: 'https://instagram.com/emutexnig' }
+};
+
 export default function AdminDashboard() {
   const [stats, setStats] = useState({
     totalProducts: 0,
@@ -77,14 +102,18 @@ export default function AdminDashboard() {
   const [recentLeads, setRecentLeads] = useState<Lead[]>([]);
   const [loading, setLoading] = useState(true);
   const [isSeeding, setIsSeeding] = useState(false);
+  const [seedProgress, setSeedProgress] = useState<{current: number, total: number, status: string} | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   const fetchDashboardData = async () => {
     if (!db) {
       setLoading(false);
+      setError("Firebase database is not initialized. Please check your environment variables (VITE_FIREBASE_API_KEY, etc.) in Settings.");
       return;
     }
     try {
       setLoading(true);
+      setError(null);
       const productsCount = await getCountFromServer(collection(db, 'products'));
       const leadsCount = await getCountFromServer(collection(db, 'leads'));
       
@@ -98,8 +127,13 @@ export default function AdminDashboard() {
         newLeads: leadsData.filter(l => l.status === 'New').length,
       });
       setRecentLeads(leadsData);
-    } catch (error) {
-      handleFirestoreError(error, OperationType.GET, 'dashboard');
+    } catch (err: any) {
+      console.error('Dashboard data fetch error:', err);
+      // Don't crash the whole UI, but show error
+      setError(err.message || String(err));
+      try {
+        handleFirestoreError(err, OperationType.GET, 'dashboard');
+      } catch (e) {}
     } finally {
       setLoading(false);
     }
@@ -110,22 +144,64 @@ export default function AdminDashboard() {
   }, []);
 
   const seedDemoData = async () => {
-    if (!confirm('This will seed demo products into your database. Continue?')) return;
+    const totalSteps = DEMO_PRODUCTS.length + DEMO_LEADS.length + DEMO_WELLNESS_NEEDS.length + 1;
+    if (!confirm('This will seed demo products, leads, wellness needs, and initial site settings. Continue?')) return;
     try {
       setIsSeeding(true);
+      setSeedProgress({ current: 0, total: totalSteps, status: 'Starting...' });
+      setError(null);
+      
+      if (!db) {
+        throw new Error("Database not initialized. Please check your Firebase configuration.");
+      }
+
+      let count = 0;
+
+      // 1. Seed Products
       for (const product of DEMO_PRODUCTS) {
+        setSeedProgress({ current: count, total: totalSteps, status: `Adding Product: ${product.name}...` });
         await addDoc(collection(db, 'products'), {
           ...product,
           createdAt: serverTimestamp(),
           updatedAt: serverTimestamp(),
         });
+        count++;
       }
-      alert('Demo products seeded successfully!');
+
+      // 2. Seed Leads
+      for (const lead of DEMO_LEADS) {
+        setSeedProgress({ current: count, total: totalSteps, status: `Adding Lead: ${lead.fullName}...` });
+        await addDoc(collection(db, 'leads'), {
+          ...lead,
+          createdAt: serverTimestamp(),
+        });
+        count++;
+      }
+
+      // 3. Seed Wellness Needs
+      for (const need of DEMO_WELLNESS_NEEDS) {
+        setSeedProgress({ current: count, total: totalSteps, status: `Adding Wellness Need: ${need.title}...` });
+        await addDoc(collection(db, 'wellnessNeeds'), need);
+        count++;
+      }
+
+      // 4. Seed Settings
+      setSeedProgress({ current: count, total: totalSteps, status: 'Configuring Initial Settings...' });
+      await setDoc(doc(db, 'settings', 'site'), INITIAL_SETTINGS);
+      count++;
+      
+      setSeedProgress({ current: count, total: totalSteps, status: 'Finalizing...' });
+      alert('Full demo data suite seeded successfully!');
       fetchDashboardData();
-    } catch (error) {
-      handleFirestoreError(error, OperationType.CREATE, 'demo-seed');
+    } catch (err: any) {
+      console.error('Seeding error:', err);
+      setError(`Seeding failed at step ${seedProgress?.current || 0}: ${err.message || String(err)}`);
+      try {
+        handleFirestoreError(err, OperationType.CREATE, 'demo-seed');
+      } catch (e) {}
     } finally {
       setIsSeeding(false);
+      setSeedProgress(null);
     }
   };
 
@@ -143,6 +219,14 @@ export default function AdminDashboard() {
           <h1 className="text-3xl font-serif">Welcome back, Admin</h1>
           <p className="text-brand-grey">Here's what's happening with EMutex Nig today.</p>
         </div>
+
+        {error && (
+          <div className="p-4 bg-red-100 border border-red-200 text-red-700 rounded-xl flex flex-col gap-2">
+            <p className="font-bold">Error encountered:</p>
+            <pre className="text-xs whitespace-pre-wrap">{error}</pre>
+            <p className="text-xs mt-2 italic">Tip: If this is a permission error, ensure you have deployed your Firestore rules.</p>
+          </div>
+        )}
 
         {/* Stats Grid */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -185,9 +269,17 @@ export default function AdminDashboard() {
                  <button 
                    onClick={seedDemoData}
                    disabled={isSeeding}
-                   className="btn-primary flex items-center justify-center gap-2 px-8 py-3 bg-brand-gold hover:bg-opacity-80 border-none"
+                   className="btn-primary flex items-center justify-center gap-2 px-8 py-3 bg-brand-gold hover:bg-opacity-80 border-none relative overflow-hidden"
                  >
-                   {isSeeding ? "Seeding..." : (
+                   {isSeeding ? (
+                     <>
+                        <Loader2 size={18} className="animate-spin" />
+                        <span>Seeding {seedProgress?.current}/{seedProgress?.total}...</span>
+                        {seedProgress && (
+                           <div className="absolute bottom-0 left-0 h-1 bg-white/30 transition-all duration-300" style={{ width: `${(seedProgress.current / seedProgress.total) * 100}%` }} />
+                        )}
+                     </>
+                   ) : (
                      <>
                         <Sparkles size={18} />
                         Seed Demo Data

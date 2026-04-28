@@ -1,13 +1,13 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { MessageCircle, CheckCircle2, ChevronRight, MapPin, ShieldCheck, Heart, Zap, Sparkles, ShoppingBag } from 'lucide-react';
-import { WELLNESS_NEEDS, CATEGORIES } from '../constants';
+import { MessageCircle, CheckCircle2, ChevronRight, MapPin, ShieldCheck, Heart, Zap, Sparkles, ShoppingBag, Loader2 } from 'lucide-react';
+import { CATEGORIES } from '../constants';
 import { siteContent } from '../data/siteContent';
 import { cn } from '../lib/utils';
 import { collection, query, where, limit, getDocs, orderBy } from 'firebase/firestore';
 import { db } from '../lib/firebase';
-import { Product } from '../types';
+import { Product, WellnessNeed } from '../types';
 import ProductCard from '../components/ProductCard';
 
 // Trust Strip Cards
@@ -20,7 +20,9 @@ const trustCards = [
 
 export default function Home() {
   const [featuredProducts, setFeaturedProducts] = useState<Product[]>([]);
+  const [wellnessNeeds, setWellnessNeeds] = useState<WellnessNeed[]>([]);
   const [loading, setLoading] = useState(true);
+  const [needsLoading, setNeedsLoading] = useState(true);
 
   useEffect(() => {
     async function fetchFeatured() {
@@ -45,7 +47,25 @@ export default function Home() {
         setLoading(false);
       }
     }
+
+    async function fetchNeeds() {
+      if (!db) {
+        setNeedsLoading(false);
+        return;
+      }
+      try {
+        const snapshot = await getDocs(collection(db, 'wellnessNeeds'));
+        const needs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as WellnessNeed));
+        setWellnessNeeds(needs);
+      } catch (error) {
+        console.error("Error fetching wellness needs:", error);
+      } finally {
+        setNeedsLoading(false);
+      }
+    }
+
     fetchFeatured();
+    fetchNeeds();
   }, []);
   return (
     <div className="space-y-20 pb-24">
@@ -184,34 +204,44 @@ export default function Home() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {WELLNESS_NEEDS.map((need, i) => (
-              <motion.div
-                key={need.id}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: i * 0.1 }}
-                whileHover={{ y: -5 }}
-                className="card p-8 flex flex-col justify-between"
-              >
-                <div className="space-y-4 text-left">
-                  <div className="w-12 h-12 rounded-xl bg-brand-mist flex items-center justify-center text-brand-emerald">
-                    {i === 0 && <Zap size={24} />}
-                    {i === 1 && <Sparkles size={24} />}
-                    {i === 2 && <Heart size={24} />}
-                    {i === 3 && <ShoppingBag size={24} />}
-                  </div>
-                  <h3 className="text-xl font-bold text-[#0E3B2E]">{need.title}</h3>
-                  <p className="text-brand-grey text-sm">{need.description}</p>
-                </div>
-                <button
-                  onClick={() => window.open(`https://wa.me/${siteContent.contact.whatsappNumber}?text=${encodeURIComponent(`Hello EMutex Nig, I am interested in ${need.whatsappTopic}. Please guide me.`)}`, '_blank')}
-                  className="mt-8 btn-secondary w-full text-sm"
+            {needsLoading ? (
+              [1, 2, 3, 4].map(i => (
+                <div key={i} className="card h-64 animate-pulse bg-brand-cream/50" />
+              ))
+            ) : wellnessNeeds.length > 0 ? (
+              wellnessNeeds.map((need, i) => (
+                <motion.div
+                  key={need.id}
+                  initial={{ opacity: 0, y: 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ delay: i * 0.1 }}
+                  whileHover={{ y: -5 }}
+                  className="card p-8 flex flex-col justify-between"
                 >
-                  {need.buttonText}
-                </button>
-              </motion.div>
-            ))}
+                  <div className="space-y-4 text-left">
+                    <div className="w-12 h-12 rounded-xl bg-brand-mist flex items-center justify-center text-brand-emerald">
+                      {i % 4 === 0 && <Zap size={24} />}
+                      {i % 4 === 1 && <Sparkles size={24} />}
+                      {i % 4 === 2 && <Heart size={24} />}
+                      {i % 4 === 3 && <ShoppingBag size={24} />}
+                    </div>
+                    <h3 className="text-xl font-bold text-[#0E3B2E]">{need.title}</h3>
+                    <p className="text-brand-grey text-sm">{need.description}</p>
+                  </div>
+                  <button
+                    onClick={() => window.open(`https://wa.me/${siteContent.contact.whatsappNumber}?text=${encodeURIComponent(`Hello EMutex Nig, I am interested in ${need.whatsappTopic}. Please guide me.`)}`, '_blank')}
+                    className="mt-8 btn-secondary w-full text-sm"
+                  >
+                    {need.buttonText}
+                  </button>
+                </motion.div>
+              ))
+            ) : (
+              <div className="col-span-full py-12 text-center text-brand-grey italic">
+                Wellness guides coming soon.
+              </div>
+            )}
           </div>
         </div>
       </section>

@@ -138,6 +138,16 @@ export default function ProductForm({ product, onClose, onSuccess }: ProductForm
 
         {/* Form Body */}
         <form id="product-form" onSubmit={handleSubmit(onSubmit)} className="flex-grow overflow-y-auto p-8 lg:p-12 space-y-12">
+          {Object.keys(errors).length > 0 && (
+            <div className="p-4 bg-red-50 border border-red-200 rounded-xl">
+              <p className="text-red-700 font-bold text-sm mb-2">Please fix the following errors:</p>
+              <ul className="list-disc list-inside text-red-600 text-xs space-y-1">
+                {Object.entries(errors).map(([field, error]: any) => (
+                  <li key={field}>{field}: {error.message || 'Invalid value'}</li>
+                ))}
+              </ul>
+            </div>
+          )}
           {activeTab === 'basic' && (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
               <div className="space-y-6">
@@ -184,6 +194,7 @@ export default function ProductForm({ product, onClose, onSuccess }: ProductForm
                     <div className="space-y-1">
                        <label className="text-xs font-bold text-brand-emerald">Short Description (for cards)</label>
                        <textarea {...register('shortDescription')} className="w-full px-4 py-3 bg-white border border-brand-champagne/30 rounded-xl h-24" />
+                       {errors.shortDescription && <p className="text-red-500 text-[10px] mt-1">{(errors.shortDescription as any).message}</p>}
                     </div>
                     <div className="space-y-1">
                        <label className="text-xs font-bold text-brand-emerald">Best For (e.g. Busy adults, energy)</label>
@@ -203,6 +214,7 @@ export default function ProductForm({ product, onClose, onSuccess }: ProductForm
                <div className="space-y-6">
                   <h3 className="text-lg font-serif font-bold flex items-center gap-2 border-l-4 border-brand-gold pl-4">Full Product Description (Markdown supported)</h3>
                   <textarea {...register('fullDescription')} className="w-full px-4 py-3 bg-white border border-brand-champagne/30 rounded-xl h-64 font-mono text-sm shadow-inner" />
+                  {errors.fullDescription && <p className="text-red-500 text-[10px] mt-1">{(errors.fullDescription as any).message}</p>}
                </div>
 
                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
