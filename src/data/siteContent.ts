@@ -2,7 +2,7 @@ export const siteContent = {
   brand: {
     name: 'EMutex Nig',
     tagline: 'wellness products for better living',
-    logoPath: 'https://res.cloudinary.com/drcroxtgs/image/upload/v1777358194/Untitled_design_sf3dwg.png',
+    logoPath: 'https://res.cloudinary.com/drcroxtgs/image/upload/f_auto,q_auto,w_400/v1777358194/Untitled_design_sf3dwg.png',
   },
   hero: {
     label: 'Akwa Ibom-based wellness brand',
