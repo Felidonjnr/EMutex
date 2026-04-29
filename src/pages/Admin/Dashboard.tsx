@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { collection, query, orderBy, limit, getDocs, getCountFromServer, addDoc, serverTimestamp, doc, setDoc } from 'firebase/firestore';
+import { collection, query, orderBy, limit, getDocs, getCountFromServer, addDoc, serverTimestamp, doc, setDoc, where, onSnapshot } from 'firebase/firestore';
 import { db, handleFirestoreError, OperationType } from '../../lib/firebase';
 import AdminLayout from '../../components/layout/AdminLayout';
 import { Lead } from '../../types';
@@ -117,6 +117,9 @@ export default function AdminDashboard() {
       const productsCount = await getCountFromServer(collection(db, 'products'));
       const leadsCount = await getCountFromServer(collection(db, 'leads'));
       
+      const newLeadsQuery = query(collection(db, 'leads'), where('status', '==', 'New'));
+      const newLeadsCount = await getCountFromServer(newLeadsQuery);
+      
       const recentLeadsQuery = query(collection(db, 'leads'), orderBy('createdAt', 'desc'), limit(5));
       const recentSnapshot = await getDocs(recentLeadsQuery);
       const leadsData = recentSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Lead));
@@ -124,7 +127,7 @@ export default function AdminDashboard() {
       setStats({
         totalProducts: productsCount.data().count,
         totalLeads: leadsCount.data().count,
-        newLeads: leadsData.filter(l => l.status === 'New').length,
+        newLeads: newLeadsCount.data().count,
       });
       setRecentLeads(leadsData);
     } catch (err: any) {
@@ -141,6 +144,19 @@ export default function AdminDashboard() {
 
   useEffect(() => {
     fetchDashboardData();
+
+    // Real-time listener for ALL new leads
+    const q = query(collection(db, 'leads'), where('status', '==', 'New'));
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      setStats(prev => ({
+        ...prev,
+        newLeads: snapshot.size
+      }));
+    }, (err) => {
+      console.error("Live leads error:", err);
+    });
+
+    return () => unsubscribe();
   }, []);
 
   const seedDemoData = async () => {
