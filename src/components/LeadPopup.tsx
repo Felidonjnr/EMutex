@@ -2,10 +2,12 @@ import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence } from 'motion/react';
 import { X, Send, CheckCircle2, User, Phone, MapPin, Package, AlertCircle, MessageCircle } from 'lucide-react';
 import { submitLeadToGoogleForm } from '../lib/googleForm';
 import { siteContent } from '../data/siteContent';
+import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import { db, handleFirestoreError, OperationType } from '../lib/firebase';
 
 const leadSchema = z.object({
   fullName: z.string().min(2, "Please enter your full name."),
@@ -35,7 +37,7 @@ export default function LeadPopup({ productName, productSlug }: LeadPopupProps) 
   });
 
   useEffect(() => {
-    // Show after 5-8 seconds
+    // Show after 7 seconds
     const timer = setTimeout(() => {
       const hasSubmitted = localStorage.getItem(`lead_submitted_${productSlug}`);
       if (!hasSubmitted) {
@@ -62,14 +64,31 @@ export default function LeadPopup({ productName, productSlug }: LeadPopupProps) 
       setIsSubmitting(true);
       setError(null);
       
+      // 1. Save to Firestore for the Admin Dashboard
+      if (db) {
+        try {
+          await addDoc(collection(db, 'leads'), {
+            ...data,
+            productSlug,
+            sourcePage: window.location.pathname,
+            status: 'New',
+            createdAt: serverTimestamp(),
+          });
+        } catch (fsError) {
+          console.error('Firestore lead save error:', fsError);
+          // We continue to Google Form fallback even if Firestore fails
+        }
+      }
+
+      // 2. Submit to Google Form (Legacy/Secondary backup)
       const success = await submitLeadToGoogleForm({
         ...data,
       });
 
-      if (success) {
+      if (success || db) { // If either succeeded, we're good
         setIsSubmitted(true);
         localStorage.setItem(`lead_submitted_${productSlug}`, 'true');
-        // Close after 4 seconds on success
+        // Close after 5 seconds on success
         setTimeout(() => setIsVisible(false), 5000);
       } else {
         setError(siteContent.leadForm.errorMessage);

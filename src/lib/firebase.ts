@@ -4,7 +4,6 @@ import { getFirestore, doc, getDocFromServer } from 'firebase/firestore';
 import { getStorage } from 'firebase/storage';
 
 // Firebase configuration from environment variables
-// You can find these in your Firebase Console: Project Settings > General > Your apps
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
   authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
@@ -24,22 +23,18 @@ try {
     app = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig);
     console.log('🚀 Firebase initialized successfully with project:', firebaseConfig.projectId);
   } else {
-    console.warn('⚠️ Firebase Configuration Missing!');
-    console.info('Please add your Firebase keys to the AI Studio Settings (gear icon) with the VITE_ prefix:');
-    console.info('- VITE_FIREBASE_API_KEY\n- VITE_FIREBASE_PROJECT_ID\n- etc.');
+    console.warn('⚠️ Firebase Configuration Missing! Please check your AI Studio Settings.');
   }
 } catch (error) {
   console.error('❌ Firebase initialization failed:', error);
 }
 
-// Initialize services
 // Database ID for Firestore (specifically for AI Studio/Enterprise setups)
 let dbId = import.meta.env.VITE_FIREBASE_DATABASE_ID || '(default)';
 
 // Safety check: If the user accidentally provided a Realtime DB or other URL as the database ID
 if (dbId && dbId.toString().startsWith('http')) {
   console.warn('VITE_FIREBASE_DATABASE_ID appears to be a URL. Falling back to (default).');
-  console.warn('NOTE: A Firestore Database ID is a simple name (e.g. "(default)" or "my-db"), not a URL starting with https://.');
   dbId = '(default)';
 }
 

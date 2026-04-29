@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { signInWithEmailAndPassword, onAuthStateChanged, signOut, sendPasswordResetEmail } from 'firebase/auth';
+import { signInWithEmailAndPassword, onAuthStateChanged, signOut, sendPasswordResetEmail, GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
 import { auth } from '../../lib/firebase';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Lock, LogIn, ShieldAlert, Sparkles, Mail, Key, Loader2 } from 'lucide-react';
+import { Lock, LogIn, ShieldAlert, Sparkles, Mail, Key, Loader2, Chrome } from 'lucide-react';
 import { siteContent } from '../../data/siteContent';
 
 // Admin email allowlist from environment variable
@@ -17,6 +17,7 @@ export default function AdminLogin() {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [resetSent, setResetSent] = useState(false);
   const navigate = useNavigate();
@@ -27,15 +28,6 @@ export default function AdminLogin() {
   };
 
   useEffect(() => {
-    // Check for missing Firebase configuration
-    const isConfigMissing = !import.meta.env.VITE_FIREBASE_API_KEY || 
-                             !import.meta.env.VITE_FIREBASE_PROJECT_ID || 
-                             !import.meta.env.VITE_ADMIN_EMAILS;
-    
-    if (isConfigMissing) {
-      setError('Firebase configuration is missing. Please check environment variables (VITE_FIREBASE_API_KEY, VITE_FIREBASE_PROJECT_ID, VITE_ADMIN_EMAILS).');
-    }
-
     if (!auth) {
       setLoading(false);
       return;
@@ -45,12 +37,15 @@ export default function AdminLogin() {
       if (user) {
         if (isAdminEmail(user.email)) {
           navigate('/em-admin/dashboard');
+          setLoading(false);
         } else {
-          setError('This account is not authorized to access EMutex Nig Admin.');
+          setError(`Account "${user.email}" is not authorized. Please log in with an admin email.`);
+          setLoading(false);
           await signOut(auth);
         }
+      } else {
+        setLoading(false);
       }
-      setLoading(false);
     });
     return unsub;
   }, [navigate]);
@@ -78,6 +73,26 @@ export default function AdminLogin() {
         setError('Failed to sign in. Please check your connection.');
       }
       setSubmitting(false);
+    }
+  };
+
+  const handleGoogleLogin = async () => {
+    try {
+      setGoogleLoading(true);
+      setError(null);
+      const provider = new GoogleAuthProvider();
+      await signInWithPopup(auth, provider);
+    } catch (err: any) {
+      console.error(err);
+      if (err.code === 'auth/popup-closed-by-user') {
+        setError('Login cancelled.');
+      } else if (err.code === 'auth/operation-not-allowed') {
+        setError('Google login is not enabled in your Firebase console. Go to Auth > Sign-in method to enable it.');
+      } else {
+        setError('Google login failed. Please try again.');
+      }
+    } finally {
+      setGoogleLoading(false);
     }
   };
 
@@ -195,8 +210,8 @@ export default function AdminLogin() {
 
           <button
             type="submit"
-            disabled={submitting}
-            className="w-full py-4 mt-4 bg-[#0E3B2E] text-white rounded-2xl font-bold flex items-center justify-center gap-3 shadow-xl shadow-brand-emerald/10 hover:opacity-95 active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+            disabled={submitting || googleLoading}
+            className="w-full py-4 mt-2 bg-[#0E3B2E] text-white rounded-2xl font-bold flex items-center justify-center gap-3 shadow-xl hover:opacity-95 active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {submitting ? (
               <>
@@ -207,6 +222,34 @@ export default function AdminLogin() {
               <>
                 <LogIn size={20} />
                 Sign In
+              </>
+            )}
+          </button>
+
+          <div className="relative my-6">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-brand-champagne/20"></div>
+            </div>
+            <div className="relative flex justify-center text-[10px] uppercase tracking-widest font-bold">
+              <span className="px-4 bg-[#FFFDF8] text-brand-grey">Or continue with</span>
+            </div>
+          </div>
+
+          <button
+            type="button"
+            onClick={handleGoogleLogin}
+            disabled={submitting || googleLoading}
+            className="w-full py-4 border border-brand-champagne/30 text-[#0E3B2E] rounded-2xl font-bold flex items-center justify-center gap-3 hover:bg-brand-mist/20 active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {googleLoading ? (
+              <>
+                <Loader2 size={20} className="animate-spin" />
+                Connecting...
+              </>
+            ) : (
+              <>
+                <Chrome size={20} className="text-brand-gold" />
+                Sign in with Google
               </>
             )}
           </button>
