@@ -1,18 +1,16 @@
 rules_version = '2';
+
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Default deny
+    // Default deny: Block all access unless explicitly allowed in a later rule
     match /{document=**} {
       allow read, write: if false;
     }
 
-    // Global Helpers
+    // --- Global Helpers ---
+    
     function isSignedIn() {
       return request.auth != null;
-    }
-
-    function isEmailVerified() {
-      return isSignedIn() && request.auth.token.email_verified == true;
     }
 
     function isAdmin() {
@@ -34,7 +32,8 @@ service cloud.firestore {
       return resource.data;
     }
 
-    // Product Validation
+    // --- Entity Validations ---
+
     function isValidProduct(data) {
       return data.keys().hasAll(['name', 'slug', 'category', 'imageUrl'])
         && data.name is string && data.name.size() > 0 && data.name.size() <= 200
@@ -43,42 +42,61 @@ service cloud.firestore {
         && data.imageUrl is string;
     }
 
+    function isValidLead(data) {
+      // Must contain core fields
+      return data.keys().hasAll(['fullName', 'whatsappNumber', 'productInterested', 'status', 'createdAt'])
+        && data.fullName is string && data.fullName.size() > 0 && data.fullName.size() <= 200
+        && data.whatsappNumber is string && data.whatsappNumber.size() > 0 && data.whatsappNumber.size() <= 50
+        && data.status in ['New', 'Contacted', 'Interested', 'Ordered', 'Not Ready', 'Follow Up Later']
+        && data.createdAt == request.time;
+    }
+
+    function isValidWellnessNeed(data) {
+      return data.keys().hasAll(['title', 'description', 'whatsappTopic'])
+        && data.title is string && data.title.size() > 0
+        && data.description is string
+        && data.whatsappTopic is string;
+    }
+
+    // --- Collection Routes ---
+
+    // Products: Publicly readable for the shop
     match /products/{productId} {
-      allow read: if true; // Allow all to read/list products for simplicity and reliability
+      allow get, list: if true; 
       allow create, update, delete: if isAdmin() && isValidProduct(incoming());
     }
 
-    match /categories/{categoryId} {
-      allow read: if true;
-      allow create, update, delete: if isAdmin();
+    // Wellness Needs / Needs: Publicly readable for the landing page
+    match /wellnessNeeds/{needId} {
+      allow get, list: if true;
+      allow create, update, delete: if isAdmin() && isValidWellnessNeed(incoming());
     }
 
+    // Multi-purpose "Needs" collection support (if used interchangeably)
+    match /needs/{needId} {
+      allow get, list: if true;
+      allow create, update, delete: if isAdmin() && isValidWellnessNeed(incoming());
+    }
+
+    // Leads: Public can create, Admins can view/manage
+    match /leads/{leadId} {
+      allow create: if isValidLead(incoming());
+      allow read, list, update, delete: if isAdmin();
+    }
+
+    // Settings: Public read for site configuration, Admin manage
     match /settings/{settingId} {
       allow read: if true;
       allow create, update, delete: if isAdmin();
     }
 
-    // Lead Validation
-    function isValidLead(data) {
-      return data.keys().hasAll(['fullName', 'whatsappNumber', 'productInterested', 'productSlug', 'sourcePage', 'status', 'createdAt'])
-        && data.fullName is string && data.fullName.size() > 0 && data.fullName.size() <= 200
-        && data.whatsappNumber is string && data.whatsappNumber.size() > 0 && data.whatsappNumber.size() <= 50
-        && data.productInterested is string && data.productInterested.size() > 0
-        && data.status in ['New', 'Contacted', 'Interested', 'Ordered', 'Not Ready', 'Follow Up Later']
-        && data.createdAt == request.time;
-    }
-
-    match /leads/{leadId} {
-      allow read, list: if isSignedIn(); // Temporarily more permissive to find if this is the hurdle
-      allow create: if isValidLead(incoming());
-      allow update, delete: if isAdmin();
-    }
-
-    match /wellnessNeeds/{needId} {
+    // Categories: Public read, Admin manage
+    match /categories/{categoryId} {
       allow read: if true;
       allow create, update, delete: if isAdmin();
     }
 
+    // Admin records: Private to the specific admin user
     match /admins/{adminId} {
       allow read: if isSignedIn() && request.auth.uid == adminId;
       allow write: if false; // Only manageable through console or initial setup
