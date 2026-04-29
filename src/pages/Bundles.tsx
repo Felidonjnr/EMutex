@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Sparkles, MessageCircle, ChevronRight, Zap, Target, RefreshCcw, Heart } from 'lucide-react';
 import { DEFAULT_SETTINGS } from '../constants';
+import SEO from '../components/SEO';
 
 const bundleTypes = [
   {
@@ -49,6 +50,11 @@ const bundleTypes = [
 export default function Bundles() {
   return (
     <div className="min-h-screen pt-12 pb-24 space-y-24">
+      <SEO 
+        title="Wellness Bundles"
+        description="Save more and get better results with our curated wellness bundles. Expertly combined products for vitality, body reset, and premium self-care from EMutex Nig."
+        url="https://emutexnig.com/bundles"
+      />
       {/* Header */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center space-y-6">
         <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-brand-gold/10 text-brand-gold text-xs font-bold uppercase tracking-[0.2em]">

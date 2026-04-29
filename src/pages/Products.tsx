@@ -8,6 +8,7 @@ import { siteContent } from '../data/siteContent';
 import { Filter, Search, RotateCcw, Sparkles } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { cn } from '../lib/utils';
+import SEO from '../components/SEO';
 
 export default function Products() {
   const [products, setProducts] = useState<Product[]>([]);
@@ -55,6 +56,11 @@ export default function Products() {
 
   return (
     <div className="min-h-screen pt-12 pb-24 space-y-12 bg-brand-mist/10">
+      <SEO 
+        title="Wellness Catalogue"
+        description="Explore our curated collection of premium Nigerian wellness and vitality products. Carefully selected support for daily wellness, body balance, and better living."
+        url="https://emutexnig.com/products"
+      />
       {/* Header */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center space-y-4">
         <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-brand-gold/10 text-brand-gold text-[10px] font-bold uppercase tracking-widest">

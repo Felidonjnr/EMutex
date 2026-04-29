@@ -9,6 +9,7 @@ import { collection, query, where, limit, getDocs, orderBy } from 'firebase/fire
 import { db } from '../lib/firebase';
 import { Product, WellnessNeed } from '../types';
 import ProductCard from '../components/ProductCard';
+import SEO from '../components/SEO';
 
 // Trust Strip Cards
 const trustCards = [
@@ -69,6 +70,10 @@ export default function Home() {
   }, []);
   return (
     <div className="space-y-20 pb-24">
+      <SEO 
+        title="EMutex Nig — Wellness Products for Better Living"
+        description="Premium Nigerian wellness and vitality products for adults who want daily wellness support, body balance, confidence, and better living. Based in Akwa Ibom, serving customers across Nigeria."
+      />
       {/* 10. Hero Section */}
       <section className="relative pt-12 lg:pt-20 overflow-hidden">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">

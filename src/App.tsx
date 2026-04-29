@@ -1,5 +1,6 @@
 import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
 import { Suspense, lazy, useEffect } from 'react';
+import SEO from './components/SEO';
 import Navbar from './components/layout/Navbar';
 import Footer from './components/layout/Footer';
 import WhatsAppButton from './components/WhatsAppButton';
@@ -86,6 +87,7 @@ function MainLayout({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="min-h-screen bg-[#FAF7F0] text-[#1E1B16] flex flex-col">
+      {isAdminRoute && <SEO noindex={true} title="Admin Portal" />}
       {!isAdminRoute && <Navbar />}
       <main className="flex-grow">
         <AnimatePresence mode="wait">

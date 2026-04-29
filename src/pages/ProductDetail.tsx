@@ -9,6 +9,7 @@ import { motion } from 'framer-motion';
 import { MessageCircle, CheckCircle2, ChevronLeft, Sparkles, ShoppingBag, Info, Shield, HelpCircle, Heart, ChevronRight, MapPin } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import { cn } from '../lib/utils';
+import SEO from '../components/SEO';
 
 export default function ProductDetail() {
   const { slug } = useParams<{ slug: string }>();
@@ -84,6 +85,13 @@ export default function ProductDetail() {
 
   return (
     <div className="pb-24 bg-brand-cream/30 min-h-screen">
+      <SEO 
+        title={product.name}
+        description={product.shortDescription || `Learn more about ${product.name} from EMutex Nig, a Nigerian wellness product brand offering carefully selected products for daily wellness support and better living.`}
+        image={product.imageUrl}
+        type="product"
+        url={`https://emutexnig.com/products/${product.slug}`}
+      />
       {/* Lead Capture Popup */}
       <LeadPopup productName={product.name} productSlug={product.slug} />
 

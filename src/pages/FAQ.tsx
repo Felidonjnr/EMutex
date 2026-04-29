@@ -1,6 +1,7 @@
 import { HelpCircle, MessageCircle, ChevronRight, CheckCircle2 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { DEFAULT_SETTINGS } from '../constants';
+import SEO from '../components/SEO';
 
 const faqs = [
   {
@@ -40,6 +41,11 @@ const faqs = [
 export default function FAQ() {
   return (
     <div className="min-h-screen pt-12 pb-24 space-y-16">
+      <SEO 
+        title="FAQ"
+        description="Have questions about EMutex Nig? Check our frequently asked questions about our wellness products, ordering via WhatsApp, and nationwide delivery in Nigeria."
+        url="https://emutexnig.com/faq"
+      />
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center space-y-6">
         <h1 className="text-4xl lg:text-6xl italic"><span className="text-brand-gold font-serif">Frequently</span> Asked Questions</h1>
         <p className="text-brand-grey text-lg max-w-2xl mx-auto italic">

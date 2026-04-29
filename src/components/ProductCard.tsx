@@ -13,12 +13,12 @@ export default function ProductCard({ product }: ProductCardProps) {
   )}`;
 
   return (
-    <div className="card group hover:border-brand-gold/50 transition-all duration-300 bg-white">
+    <article className="card group hover:border-brand-gold/50 transition-all duration-300 bg-white">
       <div className="aspect-[4/5] bg-brand-mist/30 flex items-center justify-center relative overflow-hidden">
         {product.imageUrl ? (
           <img
             src={product.imageUrl}
-            alt={product.name}
+            alt={`${product.name} from EMutex Nig`}
             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
             referrerPolicy="no-referrer"
           />
@@ -69,6 +69,6 @@ export default function ProductCard({ product }: ProductCardProps) {
           </a>
         </div>
       </div>
-    </div>
+    </article>
   );
 }
