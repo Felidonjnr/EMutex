@@ -3,7 +3,7 @@ import { Suspense, lazy, useEffect } from 'react';
 import Navbar from './components/layout/Navbar';
 import Footer from './components/layout/Footer';
 import WhatsAppButton from './components/WhatsAppButton';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence } from 'motion/react';
 import { ErrorBoundary, FallbackProps } from 'react-error-boundary';
 import { Shield } from 'lucide-react';
 

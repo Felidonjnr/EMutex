@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { motion } from 'framer-motion';
+import { motion } from 'motion/react';
 import { MessageCircle, CheckCircle2, ChevronRight, MapPin, ShieldCheck, Heart, Zap, Sparkles, ShoppingBag, Loader2 } from 'lucide-react';
 import { CATEGORIES } from '../constants';
 import { siteContent } from '../data/siteContent';

@@ -4,6 +4,7 @@ import { getFirestore, doc, getDocFromServer } from 'firebase/firestore';
 import { getStorage } from 'firebase/storage';
 
 // Firebase configuration from environment variables
+// You can find these in your Firebase Console: Project Settings > General > Your apps
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
   authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
@@ -13,17 +14,22 @@ const firebaseConfig = {
   appId: import.meta.env.VITE_FIREBASE_APP_ID,
 };
 
+// Check if we have at least an API key to attempt initialization
+const hasConfig = firebaseConfig.apiKey && firebaseConfig.apiKey !== 'undefined' && firebaseConfig.apiKey !== '';
+
 // Initialize Firebase
 let app;
 try {
-  if (firebaseConfig.apiKey && firebaseConfig.apiKey !== 'undefined') {
+  if (hasConfig) {
     app = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig);
-    console.log('Firebase initialized with project:', firebaseConfig.projectId);
+    console.log('🚀 Firebase initialized successfully with project:', firebaseConfig.projectId);
   } else {
-    console.warn('Firebase API Key is missing. If you are in AI Studio, please check your environment variables in Settings. If you are deploying, ensure VITE_FIREBASE_* variables are set.');
+    console.warn('⚠️ Firebase Configuration Missing!');
+    console.info('Please add your Firebase keys to the AI Studio Settings (gear icon) with the VITE_ prefix:');
+    console.info('- VITE_FIREBASE_API_KEY\n- VITE_FIREBASE_PROJECT_ID\n- etc.');
   }
 } catch (error) {
-  console.error('Firebase initialization failed:', error);
+  console.error('❌ Firebase initialization failed:', error);
 }
 
 // Initialize services
@@ -31,9 +37,9 @@ try {
 let dbId = import.meta.env.VITE_FIREBASE_DATABASE_ID || '(default)';
 
 // Safety check: If the user accidentally provided a Realtime DB or other URL as the database ID
-if (dbId && dbId.startsWith('http')) {
+if (dbId && dbId.toString().startsWith('http')) {
   console.warn('VITE_FIREBASE_DATABASE_ID appears to be a URL. Falling back to (default).');
-  console.warn('NOTE: A Firestore Database ID is a simple name (e.g. "(default)" or "my-db"), not a URL starting with https://. Please check your AI Studio Settings.');
+  console.warn('NOTE: A Firestore Database ID is a simple name (e.g. "(default)" or "my-db"), not a URL starting with https://.');
   dbId = '(default)';
 }
 
@@ -48,8 +54,8 @@ async function testConnection() {
   if (!db) return;
   try {
     // Try to reach the backend by performing a simple getDoc
-    // We use settings/site as a likely path, but truly any path allowed by rules will do
-    const testDoc = doc(db, '_connection_test', 'ping');
+    // We use settings/site as a likely path which is allowed for public read
+    const testDoc = doc(db, 'settings', 'site');
     await getDocFromServer(testDoc);
     console.log('✅ Firestore connection reachability test successful');
   } catch (error: any) {
