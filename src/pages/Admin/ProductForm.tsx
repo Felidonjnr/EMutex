@@ -202,6 +202,11 @@ export default function ProductForm({ product, onClose, onSuccess }: ProductForm
                        <input {...register('imageUrl')} className="w-full px-4 py-3 bg-white border border-brand-champagne/30 rounded-xl" placeholder="https://..." />
                        {errors.imageUrl && <p className="text-red-500 text-[10px] mt-1">{(errors.imageUrl as any).message}</p>}
                     </div>
+                    <div className="space-y-1">
+                       <label className="text-xs font-bold text-brand-emerald">Price (e.g. 15,000 or Confirm on WhatsApp)</label>
+                       <input {...register('price')} className="w-full px-4 py-3 bg-white border border-brand-champagne/30 rounded-xl" placeholder="e.g. 15,000" />
+                       {errors.price && <p className="text-red-500 text-[10px] mt-1">{(errors.price as any).message}</p>}
+                    </div>
                  </div>
               </div>
               <div className="space-y-6">

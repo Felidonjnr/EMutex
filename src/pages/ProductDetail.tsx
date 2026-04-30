@@ -84,7 +84,9 @@ export default function ProductDetail() {
   )}`;
 
   const displayPrice = () => {
-    if (!product.price || product.price === 'Confirm on WhatsApp' || product.price.trim() === '') {
+    const hasPrice = product.price && product.price !== 'Confirm on WhatsApp' && product.price.trim() !== '';
+    
+    if (!hasPrice) {
       return (
         <div className="space-y-1">
           <p className="text-[10px] uppercase font-bold tracking-[0.2em] text-brand-grey/60">Price & Delivery</p>
@@ -92,10 +94,11 @@ export default function ProductDetail() {
         </div>
       );
     }
+
     return (
       <div className="space-y-1">
         <p className="text-[10px] uppercase font-bold tracking-[0.2em] text-brand-grey/60">Price & Delivery</p>
-        <p className="text-2xl font-bold text-brand-emerald">Price: ₦{product.price}</p>
+        <p className="text-2xl font-bold text-brand-emerald">Price: ₦{product.price.replace('₦', '').trim()}</p>
         <p className="text-[10px] text-brand-grey italic">Please confirm the latest price and availability on WhatsApp before ordering.</p>
       </div>
     );
