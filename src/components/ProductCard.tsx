@@ -12,6 +12,20 @@ export default function ProductCard({ product }: ProductCardProps) {
     product.whatsappMessage || `Hello EMutex Nig, I am interested in ${product.name}. Please send me the current price, product details, delivery options, and how I can order.`
   )}`;
 
+  const displayPrice = () => {
+    if (!product.price || product.price === 'Confirm on WhatsApp' || product.price.trim() === '') {
+      return (
+        <p className="text-sm font-bold text-brand-gold">Price: Confirm current price on WhatsApp</p>
+      );
+    }
+    return (
+      <div className="space-y-0.5">
+        <p className="text-sm font-bold text-brand-emerald">Price: ₦{product.price}</p>
+        <p className="text-[10px] text-brand-grey italic">Confirm latest price on WhatsApp</p>
+      </div>
+    );
+  };
+
   return (
     <article className="card group hover:border-brand-gold/50 transition-all duration-300 bg-white">
       <div className="aspect-[4/5] bg-brand-mist/30 flex items-center justify-center relative overflow-hidden">
@@ -47,14 +61,7 @@ export default function ProductCard({ product }: ProductCardProps) {
           </p>
           
           <div className="pt-2">
-            {product.price && product.price !== 'Confirm on WhatsApp' ? (
-              <div className="space-y-0.5">
-                <p className="text-sm font-bold text-brand-emerald">Price: ₦{product.price}</p>
-                <p className="text-[10px] text-brand-grey italic">Confirm latest price on WhatsApp</p>
-              </div>
-            ) : (
-              <p className="text-sm font-bold text-brand-gold">Price: Confirm current price on WhatsApp</p>
-            )}
+            {displayPrice()}
           </div>
 
           {product.bestFor && (

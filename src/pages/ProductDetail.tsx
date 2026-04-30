@@ -83,6 +83,24 @@ export default function ProductDetail() {
     product.whatsappMessage || defaultWhatsappMsg
   )}`;
 
+  const displayPrice = () => {
+    if (!product.price || product.price === 'Confirm on WhatsApp' || product.price.trim() === '') {
+      return (
+        <div className="space-y-1">
+          <p className="text-[10px] uppercase font-bold tracking-[0.2em] text-brand-grey/60">Price & Delivery</p>
+          <p className="text-xl font-bold text-brand-gold">Price: Confirm current price on WhatsApp</p>
+        </div>
+      );
+    }
+    return (
+      <div className="space-y-1">
+        <p className="text-[10px] uppercase font-bold tracking-[0.2em] text-brand-grey/60">Price & Delivery</p>
+        <p className="text-2xl font-bold text-brand-emerald">Price: ₦{product.price}</p>
+        <p className="text-[10px] text-brand-grey italic">Please confirm the latest price and availability on WhatsApp before ordering.</p>
+      </div>
+    );
+  };
+
   return (
     <div className="pb-24 bg-brand-cream/30 min-h-screen">
       <SEO 
@@ -154,18 +172,7 @@ export default function ProductDetail() {
 
             <div className="card p-6 bg-[#FAF7F0] border-brand-champagne/30 space-y-4">
                <div className="flex items-center justify-between">
-                  {product.price && product.price !== 'Confirm on WhatsApp' ? (
-                    <div className="space-y-1">
-                      <p className="text-[10px] uppercase font-bold tracking-[0.2em] text-brand-grey/60">Price & Delivery</p>
-                      <p className="text-2xl font-bold text-brand-emerald">₦{product.price}</p>
-                      <p className="text-[10px] text-brand-grey italic">Confirm latest price on WhatsApp</p>
-                    </div>
-                  ) : (
-                    <div className="space-y-1">
-                      <p className="text-[10px] uppercase font-bold tracking-[0.2em] text-brand-grey/60">Price & Delivery</p>
-                      <p className="text-xl font-bold text-brand-gold">Confirm current price on WhatsApp</p>
-                    </div>
-                  )}
+                  {displayPrice()}
                   <div className="text-right">
                     <p className="text-[10px] uppercase font-bold tracking-[0.2em] text-brand-grey/60">Current Availability</p>
                     <p className={cn(
@@ -174,9 +181,6 @@ export default function ProductDetail() {
                     )}>{product.availability}</p>
                   </div>
                </div>
-               <p className="text-[10px] text-brand-grey/70 text-center border-t border-brand-champagne/20 pt-3">
-                 Prices may change. Please confirm latest price and availability on WhatsApp.
-               </p>
             </div>
 
             <div className="space-y-4 pt-4">
@@ -187,7 +191,7 @@ export default function ProductDetail() {
                 className="btn-primary w-full py-5 text-xl flex items-center justify-center gap-3 bg-[#0E3B2E] border-0 hover:opacity-95 shadow-2xl shadow-brand-emerald/20"
               >
                 <MessageCircle size={28} />
-                {product.whatsappCtaText || "Confirm Details on WhatsApp"}
+                {product.whatsappCtaText || "Confirm Latest Price on WhatsApp"}
               </a>
               <div className="flex items-center justify-center gap-6 text-[10px] font-bold text-brand-grey/50 uppercase tracking-[0.15em]">
                 <span className="flex items-center gap-1.5"><Shield size={12} className="text-brand-gold"/> Selected Quality</span>
