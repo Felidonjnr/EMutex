@@ -1,20 +1,40 @@
 import { useState, useEffect } from 'react';
-import { collection, getDocs, doc, deleteDoc, updateDoc, orderBy, query } from 'firebase/firestore';
+import { collection, getDocs, doc, deleteDoc, updateDoc, orderBy, query, where } from 'firebase/firestore';
 import { db, handleFirestoreError, OperationType } from '../../lib/firebase';
 import AdminLayout from '../../components/layout/AdminLayout';
 import { Product } from '../../types';
-import { Plus, Search, Edit2, Trash2, Eye, EyeOff, Star, Image as ImageIcon } from 'lucide-react';
+import { 
+  Plus, 
+  Search, 
+  Edit2, 
+  Trash2, 
+  Eye, 
+  EyeOff, 
+  Star, 
+  Image as ImageIcon, 
+  Upload, 
+  Home, 
+  Layout, 
+  AlertTriangle, 
+  Loader2,
+  ArrowUpRight,
+  ShoppingBag
+} from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '../../lib/utils';
 import ProductForm from './ProductForm';
+import ProductCSVImport from '../../components/admin/ProductCSVImport';
 
 export default function AdminProducts() {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [isFormOpen, setIsFormOpen] = useState(false);
+  const [isImportOpen, setIsImportOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
+  const [deleteConfirm, setDeleteConfirm] = useState<Product | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   useEffect(() => {
     fetchProducts();
@@ -38,21 +58,25 @@ export default function AdminProducts() {
     }
   }
 
-  const handleDelete = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this product?')) return;
+  const handleDelete = async () => {
+    if (!deleteConfirm) return;
     try {
-      await deleteDoc(doc(db, 'products', id));
-      setProducts(products.filter(p => p.id !== id));
+      setIsDeleting(true);
+      await deleteDoc(doc(db!, 'products', deleteConfirm.id));
+      setProducts(products.filter(p => p.id !== deleteConfirm.id));
+      setDeleteConfirm(null);
     } catch (error) {
-      handleFirestoreError(error, OperationType.DELETE, `products/${id}`);
+      handleFirestoreError(error, OperationType.DELETE, `products/${deleteConfirm.id}`);
+    } finally {
+      setIsDeleting(false);
     }
   };
 
-  const toggleVisibility = async (product: Product) => {
+  const toggleField = async (product: Product, field: keyof Product) => {
     try {
-      const newVal = !product.visible;
-      await updateDoc(doc(db, 'products', product.id), { visible: newVal });
-      setProducts(products.map(p => p.id === product.id ? { ...p, visible: newVal } : p));
+      const newVal = !product[field];
+      await updateDoc(doc(db!, 'products', product.id), { [field]: newVal });
+      setProducts(products.map(p => p.id === product.id ? { ...p, [field]: newVal } : p));
     } catch (error) {
       handleFirestoreError(error, OperationType.UPDATE, `products/${product.id}`);
     }
@@ -71,83 +95,150 @@ export default function AdminProducts() {
             <h1 className="text-3xl font-serif">Products</h1>
             <p className="text-brand-grey">Manage your wellness product inventory.</p>
           </div>
-          <button 
-            onClick={() => { setEditingProduct(null); setIsFormOpen(true); }}
-            className="btn-primary flex items-center gap-2"
-          >
-            <Plus size={20} />
-            Add Product
-          </button>
+          <div className="flex items-center gap-3">
+            <button 
+              onClick={() => setIsImportOpen(true)}
+              className="btn-secondary flex items-center gap-2 px-6"
+            >
+              <Upload size={20} />
+              Import CSV
+            </button>
+            <button 
+              onClick={() => { setEditingProduct(null); setIsFormOpen(true); }}
+              className="btn-primary flex items-center gap-2 px-6"
+            >
+              <Plus size={20} />
+              Add Product
+            </button>
+          </div>
         </div>
 
-        {/* Search */}
-        <div className="card p-4 bg-white shadow-sm max-w-md">
-           <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-brand-grey" size={18} />
-              <input 
-                type="text" 
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                placeholder="Search products..."
-                className="w-full pl-10 pr-4 py-3 bg-brand-ivory border border-brand-champagne/30 rounded-xl text-sm"
-              />
-           </div>
+        {/* Search & Stats Section */}
+        <div className="flex flex-col lg:flex-row gap-6 items-center justify-between">
+          <div className="card p-2 bg-white shadow-sm w-full lg:max-w-md">
+             <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-brand-grey" size={18} />
+                <input 
+                  type="text" 
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  placeholder="Search products..."
+                  className="w-full pl-10 pr-4 py-3 bg-brand-ivory/50 border border-brand-champagne/30 rounded-xl text-sm focus:outline-none focus:border-brand-gold outline-none"
+                />
+             </div>
+          </div>
+          <div className="flex gap-4 text-[10px] font-bold text-brand-grey uppercase tracking-widest bg-white p-4 rounded-2xl shadow-sm border border-brand-champagne/10">
+            <div className="flex items-center gap-1.5"><div className="w-2 h-2 rounded-full bg-emerald-500" /> Total: {products.length}</div>
+            <div className="flex items-center gap-1.5"><div className="w-2 h-2 rounded-full bg-brand-gold" /> Featured: {products.filter(p => p.featured).length}</div>
+            <div className="flex items-center gap-1.5"><div className="w-2 h-2 rounded-full bg-gray-400" /> Hidden: {products.filter(p => !p.visible).length}</div>
+          </div>
         </div>
 
         {/* List */}
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
            {loading ? (
-             [1, 2, 3].map(i => <div key={i} className="card h-64 animate-pulse bg-white" />)
+             [1, 2, 3, 4, 5, 6].map(i => <div key={i} className="card h-96 animate-pulse bg-white" />)
            ) : filteredProducts.length > 0 ? (
              filteredProducts.map(product => (
-               <div key={product.id} className="card bg-white hover:border-brand-gold transition-all group">
-                  <div className="h-40 bg-brand-mist flex items-center justify-center relative overflow-hidden">
+               <div key={product.id} className="card bg-white hover:border-brand-gold transition-all group overflow-hidden flex flex-col">
+                  <div className="h-48 bg-brand-mist flex items-center justify-center relative overflow-hidden shrink-0">
                      {product.imageUrl ? (
-                        <img src={product.imageUrl} alt={product.name} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                        <img src={product.imageUrl} alt={product.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" referrerPolicy="no-referrer" />
                      ) : (
                         <ImageIcon size={48} className="text-brand-gold opacity-20" />
                      )}
-                     <div className="absolute top-3 right-3 flex gap-2">
-                        {product.featured && <div className="p-1.5 bg-brand-gold text-white rounded-lg" title="Featured"><Star size={14} fill="currentColor" /></div>}
-                        {!product.visible && <div className="p-1.5 bg-red-500 text-white rounded-lg" title="Hidden"><EyeOff size={14} /></div>}
+                     <div className="absolute top-3 right-3 flex flex-col gap-2">
+                        <StatusBadge type="visibility" active={product.visible} />
+                        <StatusBadge type="stock" value={product.availability} />
+                     </div>
+                     <div className="absolute bottom-3 left-3 flex gap-1.5">
+                        {product.featured && <div className="px-2 py-0.5 bg-brand-gold text-white rounded text-[8px] font-bold uppercase tracking-widest shadow-lg">Featured</div>}
+                        {product.showOnHomepage && <div className="px-2 py-0.5 bg-brand-emerald text-white rounded text-[8px] font-bold uppercase tracking-widest shadow-lg">Home</div>}
+                        {product.showInCatalogue && <div className="px-2 py-0.5 bg-brand-charcoal text-white rounded text-[8px] font-bold uppercase tracking-widest shadow-lg">Catalogue</div>}
                      </div>
                   </div>
-                  <div className="p-6 space-y-4">
-                     <div className="space-y-1">
-                        <span className="text-[10px] font-bold text-brand-gold uppercase tracking-widest">{product.category}</span>
-                        <h3 className="font-serif text-xl text-brand-emerald truncate">{product.name}</h3>
-                        <p className="text-xs text-brand-grey line-clamp-1">{product.shortDescription}</p>
+                  <div className="p-6 space-y-6 flex-grow flex flex-col">
+                     <div className="space-y-1 flex-grow">
+                        <div className="flex items-center justify-between">
+                          <span className="text-[10px] font-bold text-brand-gold uppercase tracking-widest">{product.category}</span>
+                          <span className="text-[10px] font-bold text-brand-grey">Order: {product.productOrder}</span>
+                        </div>
+                        <h3 className="font-serif text-xl text-brand-emerald group-hover:text-brand-gold transition-colors">{product.name}</h3>
+                        <p className="text-xs text-brand-grey line-clamp-2 leading-relaxed">{product.shortDescription}</p>
+                        
+                        <div className="pt-2">
+                           <p className="text-sm font-bold text-brand-charcoal">Price: {product.price}</p>
+                        </div>
                      </div>
+
+                     {/* Quick Toggles */}
+                     <div className="grid grid-cols-2 gap-2 p-3 bg-brand-mist/20 rounded-xl">
+                        <QuickToggle 
+                          active={product.visible} 
+                          onClick={() => toggleField(product, 'visible')} 
+                          icon={Eye} 
+                          label="Visible" 
+                        />
+                        <QuickToggle 
+                          active={product.featured} 
+                          onClick={() => toggleField(product, 'featured')} 
+                          icon={Star} 
+                          label="Featured" 
+                        />
+                        <QuickToggle 
+                          active={product.showOnHomepage} 
+                          onClick={() => toggleField(product, 'showOnHomepage')} 
+                          icon={Home} 
+                          label="Homepage" 
+                        />
+                        <QuickToggle 
+                          active={product.showInCatalogue} 
+                          onClick={() => toggleField(product, 'showInCatalogue')} 
+                          icon={Layout} 
+                          label="Catalogue" 
+                        />
+                     </div>
+
                      <div className="pt-2 flex items-center justify-between gap-4 border-t border-brand-champagne/10">
                         <div className="flex items-center gap-2">
                            <button 
-                             onClick={() => toggleVisibility(product)}
-                             className={cn("p-2 rounded-lg transition-colors", product.visible ? "text-emerald-500 hover:bg-emerald-50" : "text-gray-400 hover:bg-gray-50")}
-                             title={product.visible ? "Hide from public" : "Show to public"}
-                           >
-                              {product.visible ? <Eye size={18} /> : <EyeOff size={18} />}
-                           </button>
-                           <button 
                              onClick={() => { setEditingProduct(product); setIsFormOpen(true); }}
-                             className="p-2 text-brand-emerald hover:bg-brand-mist rounded-lg transition-colors"
+                             className="p-2.5 text-brand-emerald hover:bg-brand-emerald/10 rounded-xl transition-all border border-brand-emerald/10 hover:border-brand-emerald/30 group/edit"
                              title="Edit product"
                            >
-                              <Edit2 size={18} />
+                              <Edit2 size={18} className="group-hover/edit:scale-110 transition-transform" />
                            </button>
+                           <Link 
+                             to={`/products/${product.slug}`}
+                             target="_blank"
+                             className="p-2.5 text-brand-gold hover:bg-brand-gold/10 rounded-xl transition-all border border-brand-gold/10 hover:border-brand-gold/30 group/view"
+                             title="View live product"
+                           >
+                              <ArrowUpRight size={18} className="group-hover/view:scale-110 group-hover/view:translate-x-0.5 group-hover/view:-translate-y-0.5 transition-transform" />
+                           </Link>
                         </div>
                         <button 
-                           onClick={() => handleDelete(product.id)}
-                           className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                           onClick={() => setDeleteConfirm(product)}
+                           className="p-2.5 text-red-400 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all border border-red-100 hover:border-red-200 group/del"
                            title="Delete product"
                         >
-                           <Trash2 size={18} />
+                           <Trash2 size={18} className="group-hover/del:scale-110 transition-transform" />
                         </button>
                      </div>
                   </div>
                </div>
              ))
            ) : (
-             <div className="col-span-full py-24 text-center text-brand-grey italic">No products found.</div>
+             <div className="col-span-full py-32 text-center bg-white rounded-3xl border-2 border-dashed border-brand-champagne/20">
+                <div className="w-16 h-16 bg-brand-mist/50 rounded-full flex items-center justify-center mx-auto text-brand-gold mb-4 opacity-40">
+                   <ShoppingBag size={32} />
+                </div>
+                <h3 className="text-xl font-serif text-brand-charcoal mb-1">No Products Found</h3>
+                <p className="text-brand-grey text-sm mb-6">We couldn't find any products in your database.</p>
+                {searchTerm && (
+                   <button onClick={() => setSearchTerm('')} className="text-brand-gold font-bold text-sm hover:underline">Clear search filters</button>
+                )}
+             </div>
            )}
         </div>
       </div>
@@ -160,8 +251,101 @@ export default function AdminProducts() {
              onSuccess={() => { setIsFormOpen(false); fetchProducts(); }} 
            />
         )}
+        {isImportOpen && (
+           <ProductCSVImport 
+             onClose={() => setIsImportOpen(false)} 
+             onSuccess={() => { setIsImportOpen(false); fetchProducts(); }} 
+           />
+        )}
+        {deleteConfirm && (
+           <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+              <motion.div 
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                className="bg-white max-w-md w-full rounded-3xl p-8 space-y-6 shadow-2xl"
+              >
+                  <div className="w-16 h-16 bg-red-100 text-red-600 rounded-2xl flex items-center justify-center">
+                    <AlertTriangle size={32} />
+                  </div>
+                  <div className="space-y-2">
+                    <h3 className="text-2xl font-serif text-brand-emerald">Delete Product?</h3>
+                    <p className="text-brand-grey leading-relaxed">
+                      Are you sure you want to permanently delete <span className="font-bold text-brand-charcoal">"{deleteConfirm.name}"</span>? This action cannot be undone. Leads connected to this product will remain safe.
+                    </p>
+                  </div>
+                  <div className="flex gap-4 pt-2">
+                    <button 
+                      onClick={() => setDeleteConfirm(null)}
+                      className="flex-grow btn-secondary"
+                    >
+                      Cancel
+                    </button>
+                    <button 
+                      onClick={handleDelete}
+                      disabled={isDeleting}
+                      className="flex-grow py-3 bg-red-500 text-white rounded-xl font-bold hover:bg-red-600 transition-all flex items-center justify-center gap-2"
+                    >
+                      {isDeleting ? <Loader2 className="animate-spin" size={18} /> : <Trash2 size={18} />}
+                      {isDeleting ? 'Deleting...' : 'Delete Forever'}
+                    </button>
+                  </div>
+                  <button 
+                    onClick={async () => {
+                      await toggleField(deleteConfirm, 'visible');
+                      setDeleteConfirm(null);
+                    }}
+                    className="w-full py-3 text-brand-grey text-xs font-bold uppercase tracking-widest hover:text-brand-charcoal transition-colors bg-brand-mist/20 rounded-xl"
+                  >
+                    Hide from website instead
+                  </button>
+              </motion.div>
+           </div>
+        )}
       </AnimatePresence>
     </AdminLayout>
   );
 }
 
+function StatusBadge({ type, active, value }: { type: 'visibility' | 'stock', active?: boolean, value?: string }) {
+  if (type === 'visibility') {
+    return (
+      <div className={cn(
+        "px-2 py-1 rounded-lg text-[10px] font-bold uppercase tracking-widest shadow-sm backdrop-blur flex items-center gap-1.5",
+        active ? "bg-emerald-500/90 text-white" : "bg-red-500/90 text-white"
+      )}>
+        {active ? <Eye size={12} /> : <EyeOff size={12} />}
+        {active ? 'Visible' : 'Hidden'}
+      </div>
+    );
+  }
+  
+  const colors: Record<string, string> = {
+    'In Stock': 'bg-white/90 text-emerald-600',
+    'Backorder': 'bg-white/90 text-brand-gold',
+    'Out of Stock': 'bg-white/90 text-red-500',
+  };
+
+  return (
+    <div className={cn(
+      "px-2 py-1 rounded-lg text-[10px] font-bold uppercase tracking-widest shadow-sm backdrop-blur",
+      colors[value || ''] || 'bg-white/90 text-brand-grey'
+    )}>
+      {value}
+    </div>
+  );
+}
+
+function QuickToggle({ active, onClick, icon: Icon, label }: { active: boolean, onClick: () => void, icon: any, label: string }) {
+  return (
+    <button 
+      onClick={onClick}
+      className={cn(
+        "flex items-center gap-2 px-3 py-2 rounded-lg text-[10px] font-bold uppercase tracking-tight transition-all",
+        active ? "bg-white text-brand-emerald shadow-sm" : "bg-transparent text-brand-grey hover:bg-white/50"
+      )}
+    >
+      <Icon size={12} className={cn(active ? "text-brand-gold" : "text-brand-grey")} />
+      {label}
+    </button>
+  );
+}

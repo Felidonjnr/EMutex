@@ -41,7 +41,7 @@ const DEMO_PRODUCTS = [
     benefits: ['Supports metabolism', 'Promotes cellular repair', 'Boosts daily energy levels'],
     bestFor: 'Longevity-focused adults',
     usageNote: '2 capsules daily before breakfast',
-    featured: false,
+    featured: true,
     showOnHomepage: true,
     showInCatalogue: true,
     visible: true,
@@ -65,6 +65,139 @@ const DEMO_PRODUCTS = [
     showInCatalogue: true,
     visible: true,
     productOrder: 3,
+  },
+  {
+    name: 'Herbal Detox Tea',
+    slug: 'herbal-detox-tea',
+    category: 'Detox & Body Reset',
+    shortDescription: 'A gentle but effective herbal blend to support your body naturally cleansing process.',
+    fullDescription: '# Herbal Detox Tea\n\nReset your body with our premium herbal detox blend. Specifically formulated to support digestion and natural detoxification pathways, helping you feel lighter and more balanced.',
+    imageUrl: 'https://images.unsplash.com/photo-1544787210-2213d24295c2?auto=format&fit=crop&q=80&w=800',
+    price: 'Confirm on WhatsApp',
+    availability: 'In Stock',
+    wellnessSupportPoints: ['Digestive support', 'Natural cleansing', 'Toxin elimination'],
+    benefits: ['Reduced bloating', 'Improved energy', 'Supports healthy digestion'],
+    bestFor: 'Adults looking for a natural reset',
+    usageNote: 'One cup before bed',
+    featured: false,
+    showOnHomepage: false,
+    showInCatalogue: true,
+    visible: true,
+    productOrder: 4,
+  },
+  {
+    name: 'Maca Root Extract',
+    slug: 'maca-root-extract',
+    category: 'Energy & Vitality Support',
+    shortDescription: 'Powerful natural support for hormonal balance and sustained vitality.',
+    fullDescription: '# Maca Root Extract\n\nSourced from high-quality roots, our Maca extract provides natural support for energy, stamina, and hormonal balance. A great addition to your wellness routine for natural power.',
+    imageUrl: 'https://images.unsplash.com/photo-1611241893603-3c359704e0ee?auto=format&fit=crop&q=80&w=800',
+    price: 'Confirm on WhatsApp',
+    availability: 'In Stock',
+    wellnessSupportPoints: ['Hormonal balance', 'Stamina support', 'Natural energy'],
+    benefits: ['Improved endurance', 'Balanced mood', 'Natural vitality'],
+    bestFor: 'Active adults and fitness enthusiasts',
+    usageNote: '1-2 capsules daily with food',
+    featured: false,
+    showOnHomepage: false,
+    showInCatalogue: true,
+    visible: true,
+    productOrder: 5,
+  },
+  {
+    name: 'Omega-3 Fish Oil',
+    slug: 'omega-3-fish-oil',
+    category: 'Daily Wellness Support',
+    shortDescription: 'Essential fatty acids for heart, brain, and joint support.',
+    fullDescription: '# Omega-3 Fish Oil\n\nOur high-potency Omega-3 fish oil provides essential EPA and DHA to support your body daily cardiovascular and neurological functions.',
+    imageUrl: 'https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?auto=format&fit=crop&q=80&w=800',
+    price: 'Confirm on WhatsApp',
+    availability: 'In Stock',
+    wellnessSupportPoints: ['Heart health', 'Brain function', 'Joint flexibility'],
+    benefits: ['Supports cognitive health', 'Maintains healthy heart', 'Reduces joint stiffness'],
+    bestFor: 'Anyone seeking head-to-toe wellness',
+    usageNote: '2 softgels daily',
+    featured: false,
+    showOnHomepage: false,
+    showInCatalogue: true,
+    visible: true,
+    productOrder: 6,
+  },
+  {
+    name: 'Probiotic Multi-Strain',
+    slug: 'probiotic-multi-strain',
+    category: 'Daily Wellness Support',
+    shortDescription: 'A diverse blend of beneficial bacteria to support your gut health.',
+    fullDescription: '# Probiotic Multi-Strain\n\nSupport your digestive system and immunity with our multi-strain probiotic capsules, bringing balance back to your gut microbiome.',
+    imageUrl: 'https://images.unsplash.com/photo-1550573105-34305417ab46?auto=format&fit=crop&q=80&w=800',
+    price: 'Confirm on WhatsApp',
+    availability: 'In Stock',
+    wellnessSupportPoints: ['Gut microbiome balance', 'Immune function', 'Digestive comfort'],
+    benefits: ['Better nutrient absorption', 'Regularity support', 'Stronger defenses'],
+    bestFor: 'Individuals with sensitive digestion',
+    usageNote: '1 capsule daily on an empty stomach',
+    featured: false,
+    showOnHomepage: false,
+    showInCatalogue: true,
+    visible: true,
+    productOrder: 7,
+  },
+  {
+    name: 'Zinc & Vitamin C Immune Plus',
+    slug: 'zinc-vitamin-c',
+    category: 'Daily Wellness Support',
+    shortDescription: 'Dual-action support for your immune system, especially during seasonal changes.',
+    fullDescription: '# Zinc & Vitamin C Immune Plus\n\nGive your immune system the nutrients it needs to perform at its best. Our combination of Zinc and Vitamin C is essential for daily defense.',
+    imageUrl: 'https://images.unsplash.com/photo-1616671285410-667793d56a31?auto=format&fit=crop&q=80&w=800',
+    price: 'Confirm on WhatsApp',
+    availability: 'In Stock',
+    wellnessSupportPoints: ['Immune defense', 'Antioxidant support', 'Skin health'],
+    benefits: ['Supports resilient health', 'Protects against oxidative stress', 'Aids recovery'],
+    bestFor: 'Daily immune maintenance',
+    usageNote: '1 tablet daily',
+    featured: false,
+    showOnHomepage: false,
+    showInCatalogue: true,
+    visible: true,
+    productOrder: 8,
+  },
+  {
+    name: 'Joint Vitality Complex',
+    slug: 'joint-vitality-complex',
+    category: 'Daily Wellness Support',
+    shortDescription: 'Specialized nutrients for joint comfort and structural support.',
+    fullDescription: '# Joint Vitality Complex\n\nKeep moving with comfort. Our Joint Vitality Complex combines Glucosamine and Chondroitin with natural extracts to support joint health as you age.',
+    imageUrl: 'https://images.unsplash.com/photo-1550573105-34305417ab46?auto=format&fit=crop&q=80&w=800',
+    price: 'Confirm on WhatsApp',
+    availability: 'In Stock',
+    wellnessSupportPoints: ['Joint mobility', 'Cartilage support', 'Reduced discomfort'],
+    benefits: ['Easier movement', 'Lower inflammation', 'Structural integrity'],
+    bestFor: 'Seniors and active adults',
+    usageNote: '3 tablets daily with food',
+    featured: false,
+    showOnHomepage: false,
+    showInCatalogue: true,
+    visible: true,
+    productOrder: 9,
+  },
+  {
+    name: 'Sleep Support Melatonin Blend',
+    slug: 'sleep-support-melatonin',
+    category: 'Daily Wellness Support',
+    shortDescription: 'Fall asleep faster and wake up refreshed with our gentle sleep aid.',
+    fullDescription: '# Sleep Support Melatonin Blend\n\nDesigned to help regulate your body sleep-wake cycle, our Melatonin blend is perfect for those who struggle with occasionally disturbed sleep or jet lag.',
+    imageUrl: 'https://images.unsplash.com/photo-1544787210-2213d24295c2?auto=format&fit=crop&q=80&w=800',
+    price: 'Confirm on WhatsApp',
+    availability: 'In Stock',
+    wellnessSupportPoints: ['Sleep quality', 'Faster onset of sleep', 'Jet lag recovery'],
+    benefits: ['Non-habit forming', 'Restorative rest', 'Morning freshness'],
+    bestFor: 'Shift workers and frequent travelers',
+    usageNote: '1 tablet 30 minutes before bed',
+    featured: false,
+    showOnHomepage: false,
+    showInCatalogue: true,
+    visible: true,
+    productOrder: 10,
   }
 ];
 
@@ -145,7 +278,7 @@ export default function AdminDashboard() {
 
   const seedDemoData = async () => {
     const totalSteps = DEMO_PRODUCTS.length + DEMO_LEADS.length + DEMO_WELLNESS_NEEDS.length + 1;
-    if (!confirm('This will seed demo products, leads, wellness needs, and initial site settings. Continue?')) return;
+    if (!confirm('This will seed 10 demo products, leads, wellness needs, and initial site settings. Continue?')) return;
     try {
       setIsSeeding(true);
       setSeedProgress({ current: 0, total: totalSteps, status: 'Starting...' });
@@ -162,6 +295,9 @@ export default function AdminDashboard() {
         setSeedProgress({ current: count, total: totalSteps, status: `Adding Product: ${product.name}...` });
         await addDoc(collection(db, 'products'), {
           ...product,
+          disclaimer: 'Disclaimer: These products are wellness supplements and are not intended to diagnose, treat, cure, or prevent any disease. Results may vary between individuals.',
+          whatsappCtaText: 'Confirm Details on WhatsApp',
+          whatsappMessage: `Hello EMutex Nig, I am interested in ${product.name}. Please send me the current price, product details, delivery options, and how I can order.`,
           createdAt: serverTimestamp(),
           updatedAt: serverTimestamp(),
         });
@@ -191,7 +327,23 @@ export default function AdminDashboard() {
       count++;
       
       setSeedProgress({ current: count, total: totalSteps, status: 'Finalizing...' });
-      alert('Full demo data suite seeded successfully!');
+      
+      // Final confirmation report
+      const productsSnap = await getDocs(collection(db, 'products'));
+      const allProducts = productsSnap.docs.map(d => d.data());
+      
+      const report = `
+10 products seeded successfully. 10 products available in Firestore.
+
+Summary Report:
+- Total products in database: ${allProducts.length}
+- Visible products: ${allProducts.filter(p => p.visible).length}
+- Catalogue products: ${allProducts.filter(p => p.showInCatalogue).length}
+- Homepage products: ${allProducts.filter(p => p.showOnHomepage).length}
+- Featured products: ${allProducts.filter(p => p.featured).length}
+      `;
+      
+      alert(report);
       fetchDashboardData();
     } catch (err: any) {
       console.error('Seeding error:', err);

@@ -9,7 +9,7 @@ interface ProductCardProps {
 
 export default function ProductCard({ product }: ProductCardProps) {
   const whatsappUrl = `https://wa.me/${siteContent.contact.whatsappNumber}?text=${encodeURIComponent(
-    product.whatsappMessage || `Hello EMutex Nig, I am interested in ${product.name}. Please shared more details and how I can get it.`
+    product.whatsappMessage || `Hello EMutex Nig, I am interested in ${product.name}. Please send me the current price, product details, delivery options, and how I can order.`
   )}`;
 
   return (
@@ -25,10 +25,15 @@ export default function ProductCard({ product }: ProductCardProps) {
         ) : (
           <Sparkles size={64} className="text-brand-gold opacity-10" />
         )}
-        <div className="absolute top-4 left-4">
+        <div className="absolute top-4 left-4 flex flex-col gap-2">
           <div className="bg-white/90 backdrop-blur px-3 py-1 rounded-lg text-[10px] font-bold tracking-widest uppercase text-[#0E3B2E] shadow-sm">
             {product.category}
           </div>
+          {product.featured && (
+            <div className="bg-brand-gold text-white px-3 py-1 rounded-lg text-[10px] font-bold tracking-widest uppercase shadow-sm">
+              Featured
+            </div>
+          )}
         </div>
       </div>
       
@@ -40,6 +45,18 @@ export default function ProductCard({ product }: ProductCardProps) {
           <p className="text-xs text-brand-grey line-clamp-2 min-h-[2.5rem] leading-relaxed">
             {product.shortDescription}
           </p>
+          
+          <div className="pt-2">
+            {product.price && product.price !== 'Confirm on WhatsApp' ? (
+              <div className="space-y-0.5">
+                <p className="text-sm font-bold text-brand-emerald">Price: ₦{product.price}</p>
+                <p className="text-[10px] text-brand-grey italic">Confirm latest price on WhatsApp</p>
+              </div>
+            ) : (
+              <p className="text-sm font-bold text-brand-gold">Price: Confirm current price on WhatsApp</p>
+            )}
+          </div>
+
           {product.bestFor && (
             <div className="flex items-center gap-2 mt-2">
               <div className="w-1.5 h-1.5 bg-brand-gold rounded-full" />

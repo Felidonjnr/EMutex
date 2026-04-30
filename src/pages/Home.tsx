@@ -36,8 +36,10 @@ export default function Home() {
         const q = query(
           productsRef, 
           where('visible', '==', true), 
+          where('showOnHomepage', '==', true),
           where('featured', '==', true),
-          limit(3)
+          orderBy('productOrder', 'asc'),
+          limit(6)
         );
         const snapshot = await getDocs(q);
         const products = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Product));

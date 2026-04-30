@@ -78,7 +78,7 @@ export default function ProductDetail() {
     );
   }
 
-  const defaultWhatsappMsg = `Hello EMutex Nig, I am interested in ${product.name}. Please shared more details and how I can get it.`;
+  const defaultWhatsappMsg = `Hello EMutex Nig, I am interested in ${product.name}. Please send me the current price, product details, delivery options, and how I can order.`;
   const whatsappUrl = `https://wa.me/${siteContent.contact.whatsappNumber}?text=${encodeURIComponent(
     product.whatsappMessage || defaultWhatsappMsg
   )}`;
@@ -130,7 +130,6 @@ export default function ProductDetail() {
               )}
             </div>
           </motion.div>
-
           {/* Info */}
           <div className="space-y-8">
             <div className="space-y-4">
@@ -155,18 +154,29 @@ export default function ProductDetail() {
 
             <div className="card p-6 bg-[#FAF7F0] border-brand-champagne/30 space-y-4">
                <div className="flex items-center justify-between">
-                  <div className="space-y-1">
+                  {product.price && product.price !== 'Confirm on WhatsApp' ? (
+                    <div className="space-y-1">
+                      <p className="text-[10px] uppercase font-bold tracking-[0.2em] text-brand-grey/60">Price & Delivery</p>
+                      <p className="text-2xl font-bold text-brand-emerald">₦{product.price}</p>
+                      <p className="text-[10px] text-brand-grey italic">Confirm latest price on WhatsApp</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-1">
+                      <p className="text-[10px] uppercase font-bold tracking-[0.2em] text-brand-grey/60">Price & Delivery</p>
+                      <p className="text-xl font-bold text-brand-gold">Confirm current price on WhatsApp</p>
+                    </div>
+                  )}
+                  <div className="text-right">
                     <p className="text-[10px] uppercase font-bold tracking-[0.2em] text-brand-grey/60">Current Availability</p>
                     <p className={cn(
                         "text-lg font-bold",
                         product.availability === 'In Stock' ? "text-brand-emerald" : "text-brand-gold"
                     )}>{product.availability}</p>
                   </div>
-                  <div className="text-right">
-                    <p className="text-[10px] uppercase font-bold tracking-[0.2em] text-brand-grey/60">Price & Delivery</p>
-                    <p className="text-lg font-bold text-brand-gold">WhatsApp to Confirm</p>
-                  </div>
                </div>
+               <p className="text-[10px] text-brand-grey/70 text-center border-t border-brand-champagne/20 pt-3">
+                 Prices may change. Please confirm latest price and availability on WhatsApp.
+               </p>
             </div>
 
             <div className="space-y-4 pt-4">
