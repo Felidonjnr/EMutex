@@ -33,16 +33,19 @@ export default function Home() {
       }
       try {
         const productsRef = collection(db, 'products');
+        // Simplified query to avoid missing index errors
         const q = query(
           productsRef, 
-          where('visible', '==', true), 
-          where('showOnHomepage', '==', true),
-          where('featured', '==', true),
-          orderBy('productOrder', 'asc'),
-          limit(6)
+          orderBy('productOrder', 'asc')
         );
         const snapshot = await getDocs(q);
-        const products = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Product));
+        const allProducts = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Product));
+        
+        // Filter in memory to ensure visibility rules are applied without index overhead
+        const products = allProducts
+          .filter(p => p.visible && p.showOnHomepage && p.featured)
+          .slice(0, 6);
+          
         setFeaturedProducts(products);
       } catch (error) {
         console.error("Error fetching featured products:", error);

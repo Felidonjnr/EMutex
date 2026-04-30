@@ -25,19 +25,19 @@ export default function Products() {
       try {
         setLoading(true);
         const productsRef = collection(db, 'products');
-        let q = query(
-          productsRef, 
-          where('visible', '==', true),
-          where('showInCatalogue', '==', true),
-          orderBy('productOrder', 'asc')
-        );
-
-        if (activeCategory !== 'all') {
-          q = query(q, where('category', '==', activeCategory));
-        }
+        // Simplified query to avoid index issues
+        const q = query(productsRef, orderBy('productOrder', 'asc'));
 
         const querySnapshot = await getDocs(q);
-        const data = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Product));
+        const allProducts = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Product));
+        
+        // Filter in memory
+        const data = allProducts.filter(p => {
+          const isVisible = p.visible && p.showInCatalogue;
+          const matchesCategory = activeCategory === 'all' || p.category === activeCategory;
+          return isVisible && matchesCategory;
+        });
+
         setProducts(data);
       } catch (error) {
         handleFirestoreError(error, OperationType.LIST, 'products');
