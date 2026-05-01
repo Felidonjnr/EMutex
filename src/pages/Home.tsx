@@ -32,17 +32,21 @@ export default function Home() {
       }
       try {
         const productsRef = collection(db, 'products');
-        // SECURE QUERY: Must include 'visible' filter to match rules
+        // SECURE QUERY: Simplified to allow frontend sorting/filtering
         const q = query(
           productsRef, 
-          where('visible', '==', true),
-          orderBy('productOrder', 'asc')
+          where('visible', '==', true)
         );
         const snapshot = await getDocs(q);
         const allProducts = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Product));
-        // Filter further for homepage specifics
+        // Filter further for homepage specifics and sort robustly
         const products = allProducts
-          .filter(p => p.showOnHomepage && p.featured)
+          .filter(p => {
+            const isFeatured = p.featured === true || (p.featured as any) === 'true';
+            const isHome = p.showOnHomepage === true || (p.showOnHomepage as any) === 'true';
+            return isFeatured && isHome;
+          })
+          .sort((a, b) => (a.productOrder ?? 999) - (b.productOrder ?? 999))
           .slice(0, 6);
         setFeaturedProducts(products);
       } catch (error) {

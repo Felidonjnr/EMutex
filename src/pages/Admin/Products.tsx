@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { collection, getDocs, doc, deleteDoc, updateDoc, orderBy, query, where } from 'firebase/firestore';
+import { collection, getDocs, doc, deleteDoc, updateDoc, orderBy, query, where, serverTimestamp } from 'firebase/firestore';
 import { db, handleFirestoreError, OperationType } from '../../lib/firebase';
 import AdminLayout from '../../components/layout/AdminLayout';
 import { Product } from '../../types';
@@ -18,7 +18,8 @@ import {
   AlertTriangle, 
   Loader2,
   ArrowUpRight,
-  ShoppingBag
+  ShoppingBag,
+  Wrench
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -35,6 +36,7 @@ export default function AdminProducts() {
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<Product | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [repairing, setRepairing] = useState(false);
 
   useEffect(() => {
     fetchProducts();
@@ -82,6 +84,51 @@ export default function AdminProducts() {
     }
   };
 
+  const repairProducts = async () => {
+    if (!window.confirm("Are you sure you want to repair all product visibility fields? This will ensure all products have correct boolean values and numeric order fields.")) return;
+    
+    try {
+      setRepairing(true);
+      const snapshot = await getDocs(collection(db!, 'products'));
+      const batch: Promise<void>[] = [];
+      
+      snapshot.docs.forEach(docSnap => {
+        const data = docSnap.data();
+        const updates: any = {};
+        
+        // Ensure booleans
+        if (typeof data.visible !== 'boolean') updates.visible = data.visible === 'true' || data.visible === true || data.visible === undefined;
+        if (typeof data.showInCatalogue !== 'boolean') updates.showInCatalogue = data.showInCatalogue === 'true' || data.showInCatalogue === true || data.showInCatalogue === undefined;
+        if (typeof data.showOnHomepage !== 'boolean') updates.showOnHomepage = data.showOnHomepage === 'true' || data.showOnHomepage === true;
+        if (typeof data.featured !== 'boolean') updates.featured = data.featured === 'true' || data.featured === true;
+        
+        // Ensure number
+        if (typeof data.productOrder !== 'number') updates.productOrder = parseInt(data.productOrder) || 999;
+        
+        // Defaults
+        if (!data.availability) updates.availability = "In Stock";
+        if (!data.price) updates.price = "Confirm on WhatsApp";
+        
+        if (Object.keys(updates).length > 0) {
+          batch.push(updateDoc(docSnap.ref, { ...updates, updatedAt: serverTimestamp() }));
+        }
+      });
+      
+      if (batch.length > 0) {
+        await Promise.all(batch);
+        alert(`Successfully repaired ${batch.length} products.`);
+        fetchProducts();
+      } else {
+        alert("All products already have correct visibility settings.");
+      }
+    } catch (error) {
+      console.error("Repair failed:", error);
+      alert("Repair failed. Please check the console for details.");
+    } finally {
+      setRepairing(false);
+    }
+  };
+
   const filteredProducts = products.filter(p => 
     p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     p.category.toLowerCase().includes(searchTerm.toLowerCase())
@@ -96,6 +143,15 @@ export default function AdminProducts() {
             <p className="text-brand-grey">Manage your wellness product inventory.</p>
           </div>
           <div className="flex items-center gap-3">
+            <button 
+              onClick={repairProducts}
+              disabled={repairing}
+              className="btn-secondary flex items-center gap-2 px-4 border-emerald-100 hover:bg-emerald-50"
+              title="Repair visibility and format fields for all products"
+            >
+              {repairing ? <Loader2 className="animate-spin" size={18} /> : <Wrench size={18} />}
+              <span className="hidden sm:inline">Repair Visibility</span>
+            </button>
             <button 
               onClick={() => setIsImportOpen(true)}
               className="btn-secondary flex items-center gap-2 px-6"

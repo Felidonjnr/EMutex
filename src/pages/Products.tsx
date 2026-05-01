@@ -26,22 +26,23 @@ export default function Products() {
       try {
         setLoading(true);
         const productsRef = collection(db, 'products');
-        // SECURE QUERY: Must include 'visible' filter to match rules
+        // SECURE QUERY: Simplified to only check visibility to allow frontend sorting/filtering
         const q = query(
           productsRef, 
-          where('visible', '==', true),
-          orderBy('productOrder', 'asc')
+          where('visible', '==', true)
         );
 
         const querySnapshot = await getDocs(q);
         const allProducts = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Product));
         
-        // Filter in memory for catalogue specifics
-        const data = allProducts.filter(p => {
-          const isShowInCatalogue = p.showInCatalogue;
-          const matchesCategory = activeCategory === 'all' || p.category === activeCategory;
-          return isShowInCatalogue && matchesCategory;
-        });
+        // Filter and sort in memory for catalogue specifics and ordering robustness
+        const data = allProducts
+          .filter(p => {
+            const isShowInCatalogue = p.showInCatalogue !== false; // Include if missing/true, exclude if false
+            const matchesCategory = activeCategory === 'all' || p.category === activeCategory;
+            return isShowInCatalogue && matchesCategory;
+          })
+          .sort((a, b) => (a.productOrder ?? 999) - (b.productOrder ?? 999));
 
         setProducts(data);
       } catch (error) {
