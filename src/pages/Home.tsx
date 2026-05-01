@@ -145,40 +145,11 @@ export default function Home() {
                       referrerPolicy="no-referrer"
                      />
                    ) : (
-                     <div className="w-full h-full bg-brand-mist flex items-center justify-center">
-                        <ShoppingBag size={80} className="text-brand-gold opacity-20" />
-                     </div>
+                     <div className="w-full h-full bg-brand-mist" />
                    )}
-                   <div className="absolute inset-0 bg-gradient-to-t from-[#0E3B2E]/40 to-transparent opacity-60" />
-                   <div className="absolute bottom-6 left-6 right-6">
-                      <div className="p-4 bg-white/90 backdrop-blur-md rounded-2xl border border-white/50 shadow-lg house-shadow">
-                         <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 bg-brand-gold rounded-full flex items-center justify-center text-white shrink-0">
-                               <Heart size={20} />
-                            </div>
-                            <div className="text-left">
-                               <p className="text-[10px] font-bold text-brand-gold uppercase tracking-[0.2em] mb-0.5">
-                                 {content.hero.heroBadgeText || 'Vitality First'}
-                               </p>
-                               <p className="text-xs font-serif text-[#0E3B2E] leading-tight">
-                                 {content.hero.heroImageCaption || 'Premium care for your daily wellness journey.'}
-                               </p>
-                            </div>
-                         </div>
-                      </div>
-                   </div>
+                   <div className="absolute inset-0 bg-gradient-to-t from-[#0E3B2E]/20 to-transparent opacity-40" />
                 </div>
               </div>
-              
-              {/* Trust Badge Floating */}
-              <motion.div 
-                animate={{ y: [0, -10, 0] }}
-                transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
-                className="absolute -bottom-6 -left-6 z-20 bg-[#0E3B2E] text-white p-4 rounded-2xl shadow-xl hidden sm:block border-4 border-brand-ivory"
-              >
-                  <p className="text-[10px] uppercase tracking-widest font-bold text-brand-gold mb-1 text-left">Guaranteed</p>
-                  <p className="text-sm font-serif">Selected Quality</p>
-              </motion.div>
             </motion.div>
           </div>
         </div>

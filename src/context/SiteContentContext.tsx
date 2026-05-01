@@ -45,6 +45,8 @@ export function SiteContentProvider({ children }: { children: React.ReactNode })
           leadForm: { ...fallbackContent.leadForm, ...data.leadForm },
           contact: { ...fallbackContent.contact, ...data.contact },
           social: { ...fallbackContent.social, ...data.social },
+          footer: { ...fallbackContent.footer, ...data.footer },
+          seo: { ...fallbackContent.seo, ...data.seo },
         } as SiteContent;
 
         if (data.howToOrder?.steps) {
