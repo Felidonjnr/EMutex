@@ -30,6 +30,26 @@ export interface Product {
   updatedAt: Timestamp;
 }
 
+export interface Bundle {
+  id: string;
+  name: string;
+  slug: string;
+  shortDescription: string;
+  fullDescription: string;
+  imageUrl: string;
+  price: string;
+  availability: 'In Stock' | 'Backorder' | 'Out of Stock';
+  includedProductIds: string[];
+  includedProductSlugs: string[];
+  includedItems: string[];
+  featured: boolean;
+  visible: boolean;
+  order: number;
+  whatsappMessage: string;
+  createdAt: Timestamp;
+  updatedAt: Timestamp;
+}
+
 export interface Lead {
   id: string;
   fullName: string;

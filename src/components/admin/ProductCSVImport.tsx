@@ -1,7 +1,7 @@
 import { useState, useRef } from 'react';
 import { collection, query, where, getDocs, doc, setDoc, addDoc, serverTimestamp } from 'firebase/firestore';
 import { db, handleFirestoreError, OperationType } from '../../lib/firebase';
-import { X, Upload, Download, FileText, CheckCircle2, AlertCircle, Loader2, Info, FileSpreadsheet } from 'lucide-react';
+import { X, Upload, Download, FileText, CheckCircle2, AlertCircle, Loader2, Info, FileSpreadsheet, Globe, ArrowUpRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import * as XLSX from 'xlsx';
 
@@ -33,6 +33,7 @@ interface ProductRow {
   productOrder: any;
   whatsappCtaText: string;
   whatsappMessage: string;
+  relatedBundleIds: string | string[];
   isValid?: boolean;
   errors?: string[];
 }
@@ -51,7 +52,7 @@ export default function ProductCSVImport({ onClose, onSuccess }: CSVImportProps)
       'name', 'slug', 'category', 'shortDescription', 'fullDescription', 'imageUrl', 
       'galleryImages', 'price', 'availability', 'wellnessSupportPoints', 'benefits', 
       'bestFor', 'usageNote', 'disclaimer', 'faq', 'featured', 'showOnHomepage', 
-      'showInCatalogue', 'visible', 'productOrder', 'whatsappCtaText', 'whatsappMessage'
+      'showInCatalogue', 'visible', 'productOrder', 'whatsappCtaText', 'whatsappMessage', 'relatedBundleIds'
     ];
     
     const sampleRows = [
@@ -77,7 +78,8 @@ export default function ProductCSVImport({ onClose, onSuccess }: CSVImportProps)
         visible: 'TRUE',
         productOrder: '1',
         whatsappCtaText: 'Confirm Price on WhatsApp',
-        whatsappMessage: 'Hello, I want to order Example Wellness Pack.'
+        whatsappMessage: 'Hello, I want to order Example Wellness Pack.',
+        relatedBundleIds: 'curated-pack-1|weekly-support-id'
       }
     ];
 
@@ -132,6 +134,11 @@ export default function ProductCSVImport({ onClose, onSuccess }: CSVImportProps)
     document.body.removeChild(link);
   };
 
+  const openGoogleSheetsTemplate = () => {
+    // This is a placeholder link - user should ideally provide their own template link
+    window.open('https://docs.google.com/spreadsheets/d/1_S0uByPzS9wM9ZlTjHBeG-sWbXwW-84rN8_Z6G2z7J4/copy', '_blank');
+  };
+
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = e.target.files?.[0];
     if (selectedFile) {
@@ -174,7 +181,8 @@ export default function ProductCSVImport({ onClose, onSuccess }: CSVImportProps)
           visible: parseBoolean(row.visible, true),
           productOrder: parseInt(String(row.productOrder)) || 999,
           whatsappCtaText: String(row.whatsappCtaText || 'Confirm Latest Price on WhatsApp').trim(),
-          whatsappMessage: String(row.whatsappMessage || '').trim()
+          whatsappMessage: String(row.whatsappMessage || '').trim(),
+          relatedBundleIds: parseMultiple(row.relatedBundleIds)
         };
 
         // Custom Default for WhatsApp Message
@@ -327,7 +335,7 @@ export default function ProductCSVImport({ onClose, onSuccess }: CSVImportProps)
           ) : (
             <>
               {/* Template Area */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <button 
                   onClick={downloadXLSXTemplate}
                   className="flex items-center justify-between p-4 bg-white border border-brand-champagne/30 rounded-2xl hover:border-emerald-500 transition-all group"
@@ -335,11 +343,24 @@ export default function ProductCSVImport({ onClose, onSuccess }: CSVImportProps)
                   <div className="flex items-center gap-3">
                     <FileSpreadsheet className="text-emerald-600" size={24} />
                     <div className="text-left">
-                      <p className="text-xs font-bold text-brand-emerald">Excel Template</p>
-                      <p className="text-[10px] text-brand-grey">Best for formatting & instructions</p>
+                      <p className="text-xs font-bold text-brand-emerald">Excel</p>
+                      <p className="text-[10px] text-brand-grey">.xlsx File</p>
                     </div>
                   </div>
                   <Download className="text-brand-grey group-hover:text-emerald-600" size={18} />
+                </button>
+                <button 
+                  onClick={openGoogleSheetsTemplate}
+                  className="flex items-center justify-between p-4 bg-white border border-brand-champagne/30 rounded-2xl hover:border-blue-500 transition-all group"
+                >
+                  <div className="flex items-center gap-3">
+                    <Globe className="text-blue-500" size={24} />
+                    <div className="text-left">
+                      <p className="text-xs font-bold text-brand-emerald">Google Sheets</p>
+                      <p className="text-[10px] text-brand-grey">Open Template</p>
+                    </div>
+                  </div>
+                  <ArrowUpRight className="text-brand-grey group-hover:text-blue-500" size={18} />
                 </button>
                 <button 
                   onClick={downloadCSVTemplate}
@@ -348,8 +369,8 @@ export default function ProductCSVImport({ onClose, onSuccess }: CSVImportProps)
                   <div className="flex items-center gap-3">
                     <FileText className="text-brand-gold" size={24} />
                     <div className="text-left">
-                      <p className="text-xs font-bold text-brand-emerald">CSV Template</p>
-                      <p className="text-[10px] text-brand-grey">Simple comma separated values</p>
+                      <p className="text-xs font-bold text-brand-emerald">CSV</p>
+                      <p className="text-[10px] text-brand-grey">.csv File</p>
                     </div>
                   </div>
                   <Download className="text-brand-grey group-hover:text-brand-gold" size={18} />

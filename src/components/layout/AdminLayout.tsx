@@ -3,13 +3,14 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
 import { doc, getDoc } from 'firebase/firestore';
 import { auth, db } from '../../lib/firebase';
-import { Settings, Layout, LayoutDashboard, ShoppingBag, Users, LogOut, Menu, X } from 'lucide-react';
+import { Settings, Layout, LayoutDashboard, ShoppingBag, Users, LogOut, Menu, X, Package } from 'lucide-react';
 import { useSiteContent } from '../../context/SiteContentContext';
 import { cn } from '../../lib/utils';
 
 const sidebarLinks = [
   { name: 'Dashboard', href: '/em-admin/dashboard', icon: LayoutDashboard },
   { name: 'Products', href: '/em-admin/products', icon: ShoppingBag },
+  { name: 'Bundles', href: '/em-admin/bundles', icon: Package },
   { name: 'Leads', href: '/em-admin/leads', icon: Users },
   { name: 'Site Content', href: '/em-admin/site-content', icon: Layout },
   { name: 'Settings', href: '/em-admin/settings', icon: Settings },

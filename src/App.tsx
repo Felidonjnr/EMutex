@@ -64,12 +64,14 @@ const Home = lazy(() => import('./pages/Home'));
 const Products = lazy(() => import('./pages/Products'));
 const ProductDetail = lazy(() => import('./pages/ProductDetail'));
 const Bundles = lazy(() => import('./pages/Bundles'));
+const BundleDetail = lazy(() => import('./pages/BundleDetail'));
 const FAQ = lazy(() => import('./pages/FAQ'));
 
 // Admin pages
 const AdminLogin = lazy(() => import('./pages/Admin/Login'));
 const AdminDashboard = lazy(() => import('./pages/Admin/Dashboard'));
 const AdminProducts = lazy(() => import('./pages/Admin/Products'));
+const AdminBundles = lazy(() => import('./pages/Admin/Bundles'));
 const AdminLeads = lazy(() => import('./pages/Admin/Leads'));
 const AdminSettings = lazy(() => import('./pages/Admin/Settings'));
 const AdminSiteContent = lazy(() => import('./pages/Admin/SiteContent'));
@@ -124,12 +126,14 @@ export default function App() {
                 <Route path="/products" element={<Products />} />
                 <Route path="/products/:slug" element={<ProductDetail />} />
                 <Route path="/bundles" element={<Bundles />} />
+                <Route path="/bundles/:slug" element={<BundleDetail />} />
                 <Route path="/faq" element={<FAQ />} />
                 
                 {/* Admin Routes */}
                 <Route path="/em-admin" element={<AdminLogin />} />
                 <Route path="/em-admin/dashboard" element={<AdminDashboard />} />
                 <Route path="/em-admin/products" element={<AdminProducts />} />
+                <Route path="/em-admin/bundles" element={<AdminBundles />} />
                 <Route path="/em-admin/leads" element={<AdminLeads />} />
                 <Route path="/em-admin/settings" element={<AdminSettings />} />
                 <Route path="/em-admin/site-content" element={<AdminSiteContent />} />

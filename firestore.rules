@@ -64,6 +64,16 @@ service cloud.firestore {
         && data.whatsappTopic is string && data.whatsappTopic.size() <= 200;
     }
 
+    function isValidBundle(data) {
+      return data.keys().hasAll(['name', 'slug', 'imageUrl', 'visible', 'order'])
+        && data.keys().size() >= 5
+        && data.name is string && data.name.size() > 0 && data.name.size() <= 200
+        && data.slug is string && data.slug.size() > 0 && data.slug.size() <= 200
+        && data.imageUrl is string && data.imageUrl.size() <= 1000
+        && data.visible is bool
+        && data.order is number;
+    }
+
     // --- Collection Rules ---
 
     // Products: Secure List Queries (The "Query Enforcer")
@@ -84,6 +94,15 @@ service cloud.firestore {
       allow list: if true; // No visible field defined yet for needs in blueprint
       allow create: if isValidWellnessNeed(incoming()) && isAdmin() && isValidId(needId);
       allow update: if isValidWellnessNeed(incoming()) && isAdmin();
+      allow delete: if isAdmin();
+    }
+
+    // Bundles
+    match /bundles/{bundleId} {
+      allow get: if true;
+      allow list: if resource.data.visible == true || isAdmin();
+      allow create: if isValidBundle(incoming()) && isAdmin() && isValidId(bundleId);
+      allow update: if isValidBundle(incoming()) && isAdmin();
       allow delete: if isAdmin();
     }
 

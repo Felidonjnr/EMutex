@@ -207,6 +207,17 @@ export default function ProductForm({ product, onClose, onSuccess }: ProductForm
                        <input {...register('price')} className="w-full px-4 py-3 bg-white border border-brand-champagne/30 rounded-xl" placeholder="e.g. 15,000" />
                        {errors.price && <p className="text-red-500 text-[10px] mt-1">{(errors.price as any).message}</p>}
                     </div>
+                    <div className="space-y-4 pt-4">
+                       <label className="text-xs font-bold text-brand-emerald uppercase tracking-widest block">Connect to Bundles</label>
+                       <p className="text-[10px] text-brand-grey italic">Enter Bundle IDs separated by commas. These bundles will link to this product on the website.</p>
+                       <textarea 
+                          className="w-full px-4 py-3 bg-white border border-brand-champagne/30 rounded-xl text-xs font-mono"
+                          placeholder="e.g. bundle-id-1, bundle-id-2"
+                          rows={2}
+                          defaultValue={product?.relatedBundleIds?.join(', ') || ''}
+                          onBlur={(e) => setValue('relatedBundleIds', e.target.value.split(',').map(s => s.trim()).filter(Boolean))}
+                       />
+                    </div>
                  </div>
               </div>
               <div className="space-y-6">

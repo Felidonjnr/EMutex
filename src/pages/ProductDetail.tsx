@@ -2,11 +2,11 @@ import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { collection, query, where, getDocs, limit } from 'firebase/firestore';
 import { db, handleFirestoreError, OperationType } from '../lib/firebase';
-import { Product } from '../types';
+import { Product, Bundle } from '../types';
 import { useSiteContent } from '../context/SiteContentContext';
 import LeadPopup from '../components/LeadPopup';
 import { motion } from 'framer-motion';
-import { MessageCircle, CheckCircle2, ChevronLeft, Sparkles, ShoppingBag, Info, Shield, HelpCircle, Heart, ChevronRight, MapPin } from 'lucide-react';
+import { MessageCircle, CheckCircle2, ChevronLeft, Sparkles, ShoppingBag, Info, Shield, HelpCircle, Heart, ChevronRight, MapPin, Package } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import { cn } from '../lib/utils';
 import SEO from '../components/SEO';
@@ -17,6 +17,7 @@ export default function ProductDetail() {
   const [product, setProduct] = useState<Product | null>(null);
   const [loading, setLoading] = useState(true);
   const [relatedProducts, setRelatedProducts] = useState<Product[]>([]);
+  const [relatedBundles, setRelatedBundles] = useState<Bundle[]>([]);
 
   useEffect(() => {
     async function fetchProduct() {
@@ -77,6 +78,16 @@ export default function ProductDetail() {
               .slice(0, 3);
             setRelatedProducts(relatedData);
           }
+
+          // Fetch related bundles
+          const bundlesRef = collection(db, 'bundles');
+          const bundlesQ = query(
+            bundlesRef,
+            where('visible', '==', true),
+            where('includedProductIds', 'array-contains', productData.id)
+          );
+          const bundlesSnap = await getDocs(bundlesQ);
+          setRelatedBundles(bundlesSnap.docs.map(doc => ({ id: doc.id, ...doc.data() } as Bundle)));
         } else {
           setProduct(null);
         }
@@ -252,16 +263,42 @@ export default function ProductDetail() {
               </div>
             </div>
 
-            {product.bestFor && (
-               <div className="card p-6 border-brand-gold/10 flex gap-4 bg-[#FFFDF8]">
-                  <div className="w-10 h-10 bg-brand-gold/5 rounded-full flex items-center justify-center text-brand-gold shrink-0">
-                    <Sparkles size={20} />
-                  </div>
-                  <div className="space-y-1">
-                    <h4 className="font-bold text-[#0E3B2E]">Ideal For:</h4>
-                    <p className="text-sm text-brand-grey leading-relaxed">{product.bestFor}</p>
-                  </div>
+            <div className="card p-6 border-brand-gold/10 flex gap-4 bg-[#FFFDF8]">
+               <div className="w-10 h-10 bg-brand-gold/5 rounded-full flex items-center justify-center text-brand-gold shrink-0">
+                 <Sparkles size={20} />
                </div>
+               <div className="space-y-1">
+                 <h4 className="font-bold text-[#0E3B2E]">Ideal For:</h4>
+                 <p className="text-sm text-brand-grey leading-relaxed">{product.bestFor}</p>
+               </div>
+            </div>
+
+            {relatedBundles.length > 0 && (
+              <div className="space-y-4 pt-6">
+                <div className="inline-flex items-center gap-2 px-3 py-1 bg-brand-gold/10 text-brand-gold rounded-full text-[10px] font-bold uppercase tracking-widest">
+                  <Sparkles size={10} />
+                  Better Together
+                </div>
+                <h4 className="text-lg font-serif text-[#0E3B2E]">Want greater results?</h4>
+                <p className="text-sm text-brand-grey italic">This product is part of these curated bundles:</p>
+                <div className="space-y-3">
+                  {relatedBundles.map(bundle => (
+                    <Link 
+                      key={bundle.id}
+                      to={`/bundles/${bundle.slug}`}
+                      className="flex items-center justify-between p-4 bg-white border border-brand-champagne/20 rounded-2xl hover:border-brand-gold hover:shadow-md transition-all group"
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-xl bg-brand-mist/20 flex items-center justify-center text-brand-emerald">
+                           <Package size={20} />
+                        </div>
+                        <span className="font-bold text-[#0E3B2E] group-hover:text-brand-gold transition-colors">{bundle.name}</span>
+                      </div>
+                      <ChevronRight size={18} className="text-brand-grey group-hover:text-brand-gold" />
+                    </Link>
+                  ))}
+                </div>
+              </div>
             )}
           </div>
         </div>

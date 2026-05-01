@@ -78,12 +78,41 @@
         "description": { "type": "string" },
         "order": { "type": "number" }
       }
+    },
+    "Bundle": {
+      "title": "Bundle",
+      "description": "Wellness bundle combining multiple products/items",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "slug": { "type": "string" },
+        "shortDescription": { "type": "string" },
+        "fullDescription": { "type": "string" },
+        "imageUrl": { "type": "string" },
+        "price": { "type": "string" },
+        "availability": { "type": "string" },
+        "includedProductIds": { "type": "array" },
+        "includedProductSlugs": { "type": "array" },
+        "includedItems": { "type": "array" },
+        "featured": { "type": "boolean" },
+        "visible": { "type": "boolean" },
+        "order": { "type": "number" },
+        "whatsappMessage": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["name", "slug", "imageUrl"]
     }
   },
   "firestore": {
     "products/{productId}": {
       "schema": "Product",
       "description": "Store of all wellness products"
+    },
+    "bundles/{bundleId}": {
+      "schema": "Bundle",
+      "description": "Store of all wellness bundles"
     },
     "leads/{leadId}": {
       "schema": "Lead",
