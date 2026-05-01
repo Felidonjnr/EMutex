@@ -3,24 +3,15 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
 import { doc, getDoc } from 'firebase/firestore';
 import { auth, db } from '../../lib/firebase';
-import { siteContent } from '../../data/siteContent';
-import { 
-  LayoutDashboard, 
-  ShoppingBag, 
-  Users, 
-  Settings, 
-  LogOut, 
-  ChevronRight, 
-  Menu, 
-  X,
-  Sparkles
-} from 'lucide-react';
+import { Settings, Layout, LayoutDashboard, ShoppingBag, Users, LogOut, Menu, X } from 'lucide-react';
+import { useSiteContent } from '../../context/SiteContentContext';
 import { cn } from '../../lib/utils';
 
 const sidebarLinks = [
   { name: 'Dashboard', href: '/em-admin/dashboard', icon: LayoutDashboard },
   { name: 'Products', href: '/em-admin/products', icon: ShoppingBag },
   { name: 'Leads', href: '/em-admin/leads', icon: Users },
+  { name: 'Site Content', href: '/em-admin/site-content', icon: Layout },
   { name: 'Settings', href: '/em-admin/settings', icon: Settings },
 ];
 
@@ -31,6 +22,7 @@ const ADMIN_EMAILS = (import.meta.env.VITE_ADMIN_EMAILS || '')
   .filter((email: string) => email.length > 0);
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
+  const { content } = useSiteContent();
   const [loading, setLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -80,14 +72,14 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       <aside className="hidden lg:flex flex-col w-64 bg-brand-emerald text-white p-6 sticky top-0 h-screen">
         <div className="flex items-center gap-3 mb-10 px-2">
             <img 
-              src={siteContent.brand.logoPath} 
-              alt={siteContent.brand.name} 
+              src={content.brand.logoPath} 
+              alt={content.brand.name} 
               className="h-10 w-auto object-contain brightness-0 invert" 
               onError={(e) => {
                 (e.target as HTMLImageElement).style.display = 'none';
               }}
             />
-            <h1 className="text-xl font-bold">{siteContent.brand.name}</h1>
+            <h1 className="text-xl font-bold">{content.brand.name}</h1>
         </div>
 
         <nav className="flex-grow space-y-1">
@@ -139,14 +131,14 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
            <div className="flex justify-between items-center mb-10 px-2">
               <div className="flex items-center gap-3">
                 <img 
-                  src={siteContent.brand.logoPath} 
-                  alt={siteContent.brand.name} 
+                  src={content.brand.logoPath} 
+                  alt={content.brand.name} 
                   className="h-9 w-auto object-contain brightness-0 invert" 
                   onError={(e) => {
                     (e.target as HTMLImageElement).style.display = 'none';
                   }}
                 />
-                <h1 className="text-xl font-bold">{siteContent.brand.name}</h1>
+                <h1 className="text-xl font-bold">{content.brand.name}</h1>
               </div>
               <button onClick={() => setIsSidebarOpen(false)} className="p-2 hover:bg-white/10 rounded-full"><X size={24} /></button>
            </div>

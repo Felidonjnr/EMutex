@@ -5,7 +5,7 @@ import * as z from 'zod';
 import { motion, AnimatePresence } from 'motion/react';
 import { X, Send, CheckCircle2, User, Phone, MapPin, Package, AlertCircle, MessageCircle } from 'lucide-react';
 import { submitLeadToGoogleForm } from '../lib/googleForm';
-import { siteContent } from '../data/siteContent';
+import { useSiteContent } from '../context/SiteContentContext';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { db, handleFirestoreError, OperationType } from '../lib/firebase';
 
@@ -24,6 +24,7 @@ interface LeadPopupProps {
 }
 
 export default function LeadPopup({ productName, productSlug }: LeadPopupProps) {
+  const { content } = useSiteContent();
   const [isVisible, setIsVisible] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -54,8 +55,8 @@ export default function LeadPopup({ productName, productSlug }: LeadPopupProps) 
   }, [productName, setValue]);
 
   const handleWhatsAppFallback = () => {
-    const message = `Hello EMutex Nig, I was trying to submit my interest for ${productName} on your website but encountered an error. I would like to know more.`;
-    const url = `https://wa.me/${siteContent.contact.whatsappNumber}?text=${encodeURIComponent(message)}`;
+    const message = `Hello ${content.brand.name}, I was trying to submit my interest for ${productName} on your website but encountered an error. I would like to know more.`;
+    const url = `https://wa.me/${content.contact.whatsappNumber}?text=${encodeURIComponent(message)}`;
     window.open(url, '_blank');
   };
 
@@ -91,11 +92,11 @@ export default function LeadPopup({ productName, productSlug }: LeadPopupProps) 
         // Close after 5 seconds on success
         setTimeout(() => setIsVisible(false), 5000);
       } else {
-        setError(siteContent.leadForm.errorMessage);
+        setError(content.leadForm.errorMessage);
       }
     } catch (error) {
       console.error('Lead submission error:', error);
-      setError(siteContent.leadForm.errorMessage);
+      setError(content.leadForm.errorMessage);
     } finally {
       setIsSubmitting(false);
     }
@@ -125,10 +126,10 @@ export default function LeadPopup({ productName, productSlug }: LeadPopupProps) 
                 <>
                   <div className="space-y-3">
                     <h2 className="text-3xl font-serif text-[#0E3B2E] leading-tight">
-                      {siteContent.leadForm.headline.split('interest')[0]} <span className="text-brand-gold italic">this product?</span>
+                      {content.leadForm.headline.split('interest')[0]} <span className="text-brand-gold italic">this product?</span>
                     </h2>
                     <p className="text-brand-grey text-sm leading-relaxed">
-                      {siteContent.leadForm.text}
+                      {content.leadForm.text}
                     </p>
                   </div>
 
@@ -143,7 +144,7 @@ export default function LeadPopup({ productName, productSlug }: LeadPopupProps) 
                         className="w-full flex items-center justify-center gap-2 py-2 bg-[#25D366] text-white rounded-lg text-sm font-medium"
                       >
                         <MessageCircle size={16} />
-                        {siteContent.leadForm.errorWhatsappButton}
+                        {content.leadForm.errorWhatsappButton}
                       </button>
                     </div>
                   )}
@@ -201,15 +202,15 @@ export default function LeadPopup({ productName, productSlug }: LeadPopupProps) 
                       disabled={isSubmitting}
                       className="w-full py-4 mt-4 bg-[#0E3B2E] text-white rounded-2xl font-bold flex items-center justify-center gap-2 shadow-xl shadow-brand-emerald/10 hover:opacity-90 active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                      {isSubmitting ? siteContent.leadForm.submittingButton : (
+                      {isSubmitting ? content.leadForm.submittingButton : (
                         <>
-                          {siteContent.leadForm.submitButton}
+                          {content.leadForm.submitButton}
                           <Send size={18} />
                         </>
                       )}
                     </button>
                     <p className="text-center text-[10px] text-brand-grey italic">
-                      {siteContent.leadForm.privacyNote}
+                      {content.leadForm.privacyNote}
                     </p>
                   </form>
                 </>
@@ -221,7 +222,7 @@ export default function LeadPopup({ productName, productSlug }: LeadPopupProps) 
                   <div className="space-y-3">
                     <h3 className="text-3xl font-serif text-[#0E3B2E]">Details Received</h3>
                     <p className="text-brand-grey leading-relaxed">
-                      {siteContent.leadForm.successMessage}
+                      {content.leadForm.successMessage}
                     </p>
                   </div>
                   <button

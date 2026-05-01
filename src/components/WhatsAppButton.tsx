@@ -1,16 +1,17 @@
 import { MessageCircle } from 'lucide-react';
 import { motion } from 'framer-motion';
-import { siteContent } from '../data/siteContent';
 import { useLocation } from 'react-router-dom';
+import { useSiteContent } from '../context/SiteContentContext';
 
 export default function WhatsAppButton() {
+  const { content } = useSiteContent();
   const location = useLocation();
   const isAdminPage = location.pathname.startsWith('/em-admin');
 
   if (isAdminPage) return null;
 
   const handleWhatsAppClick = () => {
-    const url = `https://wa.me/${siteContent.contact.whatsappNumber}?text=${encodeURIComponent(siteContent.finalCta.subtitle)}`;
+    const url = `https://wa.me/${content.contact.whatsappNumber}?text=${encodeURIComponent(content.finalCta.subtitle)}`;
     window.open(url, '_blank');
   };
 

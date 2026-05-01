@@ -72,6 +72,7 @@ const AdminDashboard = lazy(() => import('./pages/Admin/Dashboard'));
 const AdminProducts = lazy(() => import('./pages/Admin/Products'));
 const AdminLeads = lazy(() => import('./pages/Admin/Leads'));
 const AdminSettings = lazy(() => import('./pages/Admin/Settings'));
+const AdminSiteContent = lazy(() => import('./pages/Admin/SiteContent'));
 
 function ScrollToTop() {
   const { pathname } = useLocation();
@@ -108,30 +109,35 @@ function MainLayout({ children }: { children: React.ReactNode }) {
   );
 }
 
+import { SiteContentProvider } from './context/SiteContentContext';
+
 export default function App() {
   return (
     <BrowserRouter>
       <ScrollToTop />
-      <MainLayout>
-        <ErrorBoundary FallbackComponent={ErrorFallback}>
-          <Suspense fallback={<div className="flex items-center justify-center h-screen">Loading...</div>}>
-            <Routes>
-            <Route path="/" element={<Home />} />
-            <Route path="/products" element={<Products />} />
-            <Route path="/products/:slug" element={<ProductDetail />} />
-            <Route path="/bundles" element={<Bundles />} />
-            <Route path="/faq" element={<FAQ />} />
-            
-            {/* Admin Routes */}
-            <Route path="/em-admin" element={<AdminLogin />} />
-            <Route path="/em-admin/dashboard" element={<AdminDashboard />} />
-            <Route path="/em-admin/products" element={<AdminProducts />} />
-            <Route path="/em-admin/leads" element={<AdminLeads />} />
-            <Route path="/em-admin/settings" element={<AdminSettings />} />
-          </Routes>
-        </Suspense>
-      </ErrorBoundary>
-    </MainLayout>
-  </BrowserRouter>
-);
+      <SiteContentProvider>
+        <MainLayout>
+          <ErrorBoundary FallbackComponent={ErrorFallback}>
+            <Suspense fallback={<div className="flex items-center justify-center h-screen">Loading...</div>}>
+              <Routes>
+                <Route path="/" element={<Home />} />
+                <Route path="/products" element={<Products />} />
+                <Route path="/products/:slug" element={<ProductDetail />} />
+                <Route path="/bundles" element={<Bundles />} />
+                <Route path="/faq" element={<FAQ />} />
+                
+                {/* Admin Routes */}
+                <Route path="/em-admin" element={<AdminLogin />} />
+                <Route path="/em-admin/dashboard" element={<AdminDashboard />} />
+                <Route path="/em-admin/products" element={<AdminProducts />} />
+                <Route path="/em-admin/leads" element={<AdminLeads />} />
+                <Route path="/em-admin/settings" element={<AdminSettings />} />
+                <Route path="/em-admin/site-content" element={<AdminSiteContent />} />
+              </Routes>
+            </Suspense>
+          </ErrorBoundary>
+        </MainLayout>
+      </SiteContentProvider>
+    </BrowserRouter>
+  );
 }

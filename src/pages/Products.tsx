@@ -4,13 +4,14 @@ import { db, handleFirestoreError, OperationType } from '../lib/firebase';
 import { Product } from '../types';
 import ProductCard from '../components/ProductCard';
 import { CATEGORIES } from '../constants';
-import { siteContent } from '../data/siteContent';
+import { useSiteContent } from '../context/SiteContentContext';
 import { Filter, Search, RotateCcw, Sparkles } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { cn } from '../lib/utils';
 import SEO from '../components/SEO';
 
 export default function Products() {
+  const { content } = useSiteContent();
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeCategory, setActiveCategory] = useState<string>('all');
@@ -25,17 +26,21 @@ export default function Products() {
       try {
         setLoading(true);
         const productsRef = collection(db, 'products');
-        // Simplified query to avoid index issues
-        const q = query(productsRef, orderBy('productOrder', 'asc'));
+        // SECURE QUERY: Must include 'visible' filter to match rules
+        const q = query(
+          productsRef, 
+          where('visible', '==', true),
+          orderBy('productOrder', 'asc')
+        );
 
         const querySnapshot = await getDocs(q);
         const allProducts = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Product));
         
-        // Filter in memory
+        // Filter in memory for catalogue specifics
         const data = allProducts.filter(p => {
-          const isVisible = p.visible && p.showInCatalogue;
+          const isShowInCatalogue = p.showInCatalogue;
           const matchesCategory = activeCategory === 'all' || p.category === activeCategory;
-          return isVisible && matchesCategory;
+          return isShowInCatalogue && matchesCategory;
         });
 
         setProducts(data);
@@ -69,7 +74,7 @@ export default function Products() {
         </div>
         <h1 className="text-4xl lg:text-6xl text-[#0E3B2E] font-serif">Our Wellness <span className="text-brand-gold italic">Catalogue</span></h1>
         <p className="text-brand-grey text-lg max-w-2xl mx-auto">
-          {siteContent.hero.subheadline}
+          {content.hero.subheadline}
         </p>
       </section>
 

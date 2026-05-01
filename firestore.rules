@@ -2,7 +2,7 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Default deny: Block all access unless explicitly allowed in a later rule
+    // 0. Global Safety Net: Default deny everything
     match /{document=**} {
       allow read, write: if false;
     }
@@ -13,10 +13,11 @@ service cloud.firestore {
       return request.auth != null;
     }
 
+    // Auth tokens reflect the current user's email from metadata
     function isAdmin() {
       return isSignedIn() && (
         exists(/databases/$(database)/documents/admins/$(request.auth.uid)) ||
-        (request.auth.token.keys().contains('email') && request.auth.token.email.lower() == "godshandudoh@gmail.com")
+        (request.auth.token.email_verified == true && request.auth.token.email.lower() == "godshandudoh@gmail.com")
       );
     }
 
@@ -32,74 +33,82 @@ service cloud.firestore {
       return resource.data;
     }
 
-    // --- Entity Validations ---
+    // --- Entity Validation Blueprints (Anti-Update-Gap) ---
 
     function isValidProduct(data) {
-      return data.keys().hasAll(['name', 'slug', 'category', 'imageUrl'])
+      return data.keys().hasAll(['name', 'slug', 'category', 'imageUrl', 'visible', 'productOrder'])
+        && data.keys().size() >= 6
         && data.name is string && data.name.size() > 0 && data.name.size() <= 200
         && data.slug is string && data.slug.size() > 0 && data.slug.size() <= 200
-        && data.category is string
-        && data.imageUrl is string;
+        && data.category is string && data.category.size() <= 100
+        && data.imageUrl is string && data.imageUrl.size() <= 1000
+        && data.visible is bool
+        && data.productOrder is number;
     }
 
     function isValidLead(data) {
-      // Must contain core fields
       return data.keys().hasAll(['fullName', 'whatsappNumber', 'productInterested', 'status', 'createdAt'])
-        && data.fullName is string && data.fullName.size() > 0 && data.fullName.size() <= 200
-        && data.whatsappNumber is string && data.whatsappNumber.size() > 0 && data.whatsappNumber.size() <= 50
+        && data.keys().size() >= 5
+        && data.fullName is string && data.fullName.size() >= 2 && data.fullName.size() <= 200
+        && data.whatsappNumber is string && data.whatsappNumber.size() >= 10 && data.whatsappNumber.size() <= 50
+        && data.productInterested is string && data.productInterested.size() > 0
         && data.status in ['New', 'Contacted', 'Interested', 'Ordered', 'Not Ready', 'Follow Up Later']
         && data.createdAt == request.time;
     }
 
     function isValidWellnessNeed(data) {
       return data.keys().hasAll(['title', 'description', 'whatsappTopic'])
-        && data.title is string && data.title.size() > 0
-        && data.description is string
-        && data.whatsappTopic is string;
+        && data.keys().size() >= 3
+        && data.title is string && data.title.size() > 0 && data.title.size() <= 200
+        && data.description is string && data.description.size() <= 1000
+        && data.whatsappTopic is string && data.whatsappTopic.size() <= 200;
     }
 
-    // --- Collection Routes ---
+    // --- Collection Rules ---
 
-    // Products: Publicly readable for the shop
+    // Products: Secure List Queries (The "Query Enforcer")
     match /products/{productId} {
-      allow get, list: if true; 
-      allow create, update, delete: if isAdmin() && isValidProduct(incoming());
+      allow get: if true;
+      allow list: if resource.data.visible == true || isAdmin();
+      allow create: if isValidProduct(incoming()) && isAdmin() && isValidId(productId);
+      allow update: if isValidProduct(incoming()) && (
+        isAdmin() || 
+        (isSignedIn() && incoming().diff(existing()).affectedKeys().hasOnly(['viewCount'])) // Example of tiered update
+      );
+      allow delete: if isAdmin();
     }
 
-    // Wellness Needs / Needs: Publicly readable for the landing page
+    // Wellness Needs
     match /wellnessNeeds/{needId} {
-      allow get, list: if true;
-      allow create, update, delete: if isAdmin() && isValidWellnessNeed(incoming());
+      allow get: if true;
+      allow list: if true; // No visible field defined yet for needs in blueprint
+      allow create: if isValidWellnessNeed(incoming()) && isAdmin() && isValidId(needId);
+      allow update: if isValidWellnessNeed(incoming()) && isAdmin();
+      allow delete: if isAdmin();
     }
 
-    // Multi-purpose "Needs" collection support (if used interchangeably)
-    match /needs/{needId} {
-      allow get, list: if true;
-      allow create, update, delete: if isAdmin() && isValidWellnessNeed(incoming());
-    }
-
-    // Leads: Public can create, Admins can view/manage
+    // Leads: PII Isolation & Identity Integrity
     match /leads/{leadId} {
-      allow create: if isValidLead(incoming());
+      allow create: if isValidLead(incoming()) && isValidId(leadId);
       allow read, list, update, delete: if isAdmin();
     }
 
-    // Settings: Public read for site configuration, Admin manage
+    // Settings: Global Config
     match /settings/{settingId} {
       allow read: if true;
       allow create, update, delete: if isAdmin();
     }
 
-    // Categories: Public read, Admin manage
+    // Categories: Publicly readable
     match /categories/{categoryId} {
       allow read: if true;
-      allow create, update, delete: if isAdmin();
+      allow create, update, delete: if isAdmin() && isValidId(categoryId);
     }
 
     // Admin records: Private to the specific admin user
     match /admins/{adminId} {
       allow read: if isSignedIn() && request.auth.uid == adminId;
-      allow write: if false; // Only manageable through console or initial setup
+      allow write: if false; 
     }
   }
 }

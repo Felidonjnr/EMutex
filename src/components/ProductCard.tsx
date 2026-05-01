@@ -1,15 +1,16 @@
 import { Link } from 'react-router-dom';
 import { MessageCircle, ChevronRight, Sparkles } from 'lucide-react';
 import { Product } from '../types';
-import { siteContent } from '../data/siteContent';
+import { useSiteContent } from '../context/SiteContentContext';
 
 interface ProductCardProps {
   product: Product;
 }
 
 export default function ProductCard({ product }: ProductCardProps) {
-  const whatsappUrl = `https://wa.me/${siteContent.contact.whatsappNumber}?text=${encodeURIComponent(
-    product.whatsappMessage || `Hello EMutex Nig, I am interested in ${product.name}. Please send me the current price, product details, delivery options, and how I can order.`
+  const { content } = useSiteContent();
+  const whatsappUrl = `https://wa.me/${content.contact.whatsappNumber}?text=${encodeURIComponent(
+    product.whatsappMessage || `Hello ${content.brand.name}, I am interested in ${product.name}. Please send me the current price, product details, delivery options, and how I can order.`
   )}`;
 
   const displayPrice = () => {

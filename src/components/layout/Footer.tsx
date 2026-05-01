@@ -1,8 +1,9 @@
 import { Link } from 'react-router-dom';
 import { CATEGORIES } from '../../constants';
-import { siteContent } from '../../data/siteContent';
+import { useSiteContent } from '../../context/SiteContentContext';
 
 export default function Footer() {
+  const { content } = useSiteContent();
   return (
     <footer className="bg-brand-emerald text-brand-ivory pt-16 pb-8">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -11,8 +12,8 @@ export default function Footer() {
           <div className="space-y-4">
             <Link to="/" className="flex flex-col gap-3">
               <img
-                src={siteContent.brand.logoPath}
-                alt={`${siteContent.brand.name} Logo`}
+                src={content.brand.logoPath}
+                alt="EMutex Nig logo"
                 className="h-12 md:h-14 w-auto object-contain brightness-0 invert"
                 onError={(e) => {
                   (e.target as HTMLImageElement).style.display = 'none';
@@ -20,15 +21,15 @@ export default function Footer() {
               />
               <div className="leading-tight">
                 <p className="text-2xl font-serif font-bold text-white">
-                  {siteContent.brand.name}
+                  {content.brand.name}
                 </p>
                 <p className="text-brand-champagne font-medium italic text-sm">
-                  {siteContent.brand.tagline}
+                  {content.brand.tagline}
                 </p>
               </div>
             </Link>
             <p className="text-brand-ivory/80 text-sm leading-relaxed">
-              {siteContent.about.description}
+              {content.about.description}
             </p>
           </div>
 
@@ -64,19 +65,19 @@ export default function Footer() {
             <ul className="space-y-4 text-sm">
               <li>
                 <span className="block text-brand-champagne font-medium mb-1">WhatsApp</span>
-                <a href={`https://wa.me/${siteContent.contact.whatsappNumber}`} className="hover:text-brand-gold transition-colors">
-                  +{siteContent.contact.whatsappNumber}
+                <a href={`https://wa.me/${content.contact.whatsappNumber}`} className="hover:text-brand-gold transition-colors">
+                  +{content.contact.whatsappNumber}
                 </a>
               </li>
               <li>
                 <span className="block text-brand-champagne font-medium mb-1">Location</span>
-                <p>{siteContent.contact.address}</p>
+                <p>{content.contact.address}</p>
               </li>
               <li>
                 <span className="block text-brand-champagne font-medium mb-1">Follow Us</span>
                 <div className="flex gap-4 mt-2">
-                  <a href={siteContent.social.facebook || '#'} className="hover:text-brand-gold transition-colors">Facebook</a>
-                  <a href={siteContent.social.instagram || '#'} className="hover:text-brand-gold transition-colors">Instagram</a>
+                  <a href={content.social.facebook || '#'} className="hover:text-brand-gold transition-colors" target="_blank" rel="noopener noreferrer">Facebook</a>
+                  <a href={content.social.instagram || '#'} className="hover:text-brand-gold transition-colors" target="_blank" rel="noopener noreferrer">Instagram</a>
                 </div>
               </li>
             </ul>
@@ -85,7 +86,7 @@ export default function Footer() {
 
         <div className="pt-8 border-t border-white/10 text-center">
           <p className="text-xs text-brand-ivory/60">
-            © {new Date().getFullYear()} {siteContent.brand.name}. All rights reserved.
+            © {new Date().getFullYear()} {content.brand.name}. All rights reserved.
           </p>
         </div>
       </div>

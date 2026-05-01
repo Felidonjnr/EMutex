@@ -4,7 +4,7 @@ import { signInWithEmailAndPassword, onAuthStateChanged, signOut, sendPasswordRe
 import { auth } from '../../lib/firebase';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Lock, LogIn, ShieldAlert, Sparkles, Mail, Key, Loader2, Chrome } from 'lucide-react';
-import { siteContent } from '../../data/siteContent';
+import { useSiteContent } from '../../context/SiteContentContext';
 
 // Admin email allowlist from environment variable
 const ADMIN_EMAILS = (import.meta.env.VITE_ADMIN_EMAILS || '')
@@ -13,6 +13,7 @@ const ADMIN_EMAILS = (import.meta.env.VITE_ADMIN_EMAILS || '')
   .filter((email: string) => email.length > 0);
 
 export default function AdminLogin() {
+  const { content } = useSiteContent();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(true);
@@ -131,15 +132,15 @@ export default function AdminLogin() {
         <div className="text-center space-y-6">
           <div className="flex flex-col items-center gap-4">
             <img
-              src={siteContent.brand.logoPath}
-              alt={`${siteContent.brand.name} Logo`}
+              src={content.brand.logoPath}
+              alt={`${content.brand.name} Logo`}
               className="h-16 w-auto object-contain"
               onError={(e) => {
                 (e.target as HTMLImageElement).style.display = 'none';
               }}
             />
             <div>
-              <h1 className="text-2xl font-bold text-[#0E3B2E]">EMutex Nig Admin</h1>
+              <h1 className="text-2xl font-bold text-[#0E3B2E]">{content.brand.name} Admin</h1>
               <p className="text-brand-grey text-sm mt-1 font-medium">Secure product management portal</p>
             </div>
           </div>

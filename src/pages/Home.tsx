@@ -2,28 +2,27 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'motion/react';
 import { MessageCircle, CheckCircle2, ChevronRight, MapPin, ShieldCheck, Heart, Zap, Sparkles, ShoppingBag, Loader2 } from 'lucide-react';
-import { CATEGORIES } from '../constants';
-import { siteContent } from '../data/siteContent';
-import { cn } from '../lib/utils';
-import { collection, query, where, limit, getDocs, orderBy } from 'firebase/firestore';
+import { collection, query, getDocs, orderBy, where } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { Product, WellnessNeed } from '../types';
 import ProductCard from '../components/ProductCard';
 import SEO from '../components/SEO';
-
-// Trust Strip Cards
-const trustCards = [
-  { icon: MapPin, title: 'Akwa Ibom-Based', desc: siteContent.trust.locationSignal },
-  { icon: ShieldCheck, title: 'Selected Quality', desc: 'Wellness support for adults.' },
-  { icon: MessageCircle, title: 'WhatsApp Ordering', desc: 'Ask, confirm, and order easily.' },
-  { icon: Heart, title: 'Clear Guidance', desc: 'Choose without confusion.' },
-];
+import { useSiteContent } from '../context/SiteContentContext';
 
 export default function Home() {
+  const { content, loading: contentLoading } = useSiteContent();
   const [featuredProducts, setFeaturedProducts] = useState<Product[]>([]);
   const [wellnessNeeds, setWellnessNeeds] = useState<WellnessNeed[]>([]);
   const [loading, setLoading] = useState(true);
   const [needsLoading, setNeedsLoading] = useState(true);
+
+  // Trust Strip Cards
+  const trustCards = [
+    { icon: MapPin, title: 'Akwa Ibom-Based', desc: content.trust.locationSignal },
+    { icon: ShieldCheck, title: 'Selected Quality', desc: 'Wellness support for adults.' },
+    { icon: MessageCircle, title: 'WhatsApp Ordering', desc: 'Ask, confirm, and order easily.' },
+    { icon: Heart, title: 'Clear Guidance', desc: 'Choose without confusion.' },
+  ];
 
   useEffect(() => {
     async function fetchFeatured() {
@@ -33,19 +32,18 @@ export default function Home() {
       }
       try {
         const productsRef = collection(db, 'products');
-        // Simplified query to avoid missing index errors
+        // SECURE QUERY: Must include 'visible' filter to match rules
         const q = query(
           productsRef, 
+          where('visible', '==', true),
           orderBy('productOrder', 'asc')
         );
         const snapshot = await getDocs(q);
         const allProducts = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Product));
-        
-        // Filter in memory to ensure visibility rules are applied without index overhead
+        // Filter further for homepage specifics
         const products = allProducts
-          .filter(p => p.visible && p.showOnHomepage && p.featured)
+          .filter(p => p.showOnHomepage && p.featured)
           .slice(0, 6);
-          
         setFeaturedProducts(products);
       } catch (error) {
         console.error("Error fetching featured products:", error);
@@ -73,11 +71,20 @@ export default function Home() {
     fetchFeatured();
     fetchNeeds();
   }, []);
+
+  if (contentLoading) {
+    return (
+      <div className="flex items-center justify-center h-screen bg-brand-ivory">
+        <Loader2 className="animate-spin text-brand-emerald" size={40} />
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-20 pb-24">
       <SEO 
-        title="EMutex Nig — Wellness Products for Better Living"
-        description="Premium Nigerian wellness and vitality products for adults who want daily wellness support, body balance, confidence, and better living. Based in Akwa Ibom, serving customers across Nigeria."
+        title={`${content.brand.name} — ${content.brand.tagline}`}
+        description={content.about.description}
       />
       {/* 10. Hero Section */}
       <section className="relative pt-12 lg:pt-20 overflow-hidden">
@@ -91,30 +98,30 @@ export default function Home() {
             >
               <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-brand-gold/10 text-brand-gold text-sm font-semibold uppercase tracking-wider">
                 <Sparkles size={14} />
-                {siteContent.hero.label}
+                {content.hero.label}
               </div>
               <h1 className="text-5xl lg:text-7xl font-serif leading-tight text-[#0E3B2E]">
-                {siteContent.hero.headline.split('for')[0]} <span className="text-brand-gold italic text-6xl block md:inline">for Better Living</span>
+                {content.hero.headline}
               </h1>
               <p className="text-lg lg:text-xl text-brand-grey max-w-lg leading-relaxed">
-                {siteContent.hero.subheadline}
+                {content.hero.subheadline}
               </p>
               <div className="flex flex-col sm:flex-row gap-4 pt-4">
                 <Link to="/products" className="btn-primary flex items-center justify-center gap-2 px-8 py-4 text-lg">
-                  {siteContent.hero.ctaPrimary}
+                  {content.hero.ctaPrimary}
                   <ChevronRight size={20} />
                 </Link>
                 <button
-                  onClick={() => window.open(`https://wa.me/${siteContent.contact.whatsappNumber}?text=${encodeURIComponent(siteContent.finalCta.subtitle)}`, '_blank')}
+                  onClick={() => window.open(`https://wa.me/${content.contact.whatsappNumber}?text=${encodeURIComponent(content.finalCta.subtitle)}`, '_blank')}
                   className="btn-secondary flex items-center justify-center gap-2 px-8 py-4 text-lg"
                 >
                   <MessageCircle size={20} />
-                  {siteContent.hero.ctaSecondary}
+                  {content.hero.ctaSecondary}
                 </button>
               </div>
               <p className="text-sm text-brand-grey/70 flex items-center gap-2">
                 <CheckCircle2 size={16} className="text-brand-emerald" />
-                {siteContent.trust.locationSignal}
+                {content.trust.locationSignal}
               </p>
             </motion.div>
 
@@ -122,17 +129,43 @@ export default function Home() {
               initial={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ duration: 0.8 }}
-              className="relative"
+              className="relative lg:ml-12"
             >
-              <div className="aspect-square rounded-full bg-gradient-to-br from-brand-gold/20 to-brand-emerald/10 absolute -z-10 blur-3xl scale-125" />
-              <div className="relative z-10 card aspect-square max-w-lg mx-auto flex flex-col items-center justify-center p-8 border-brand-gold/20 bg-[#FFFDF8]">
-                <div className="text-center space-y-6">
-                  <div className="w-64 h-64 mx-auto bg-brand-mist/30 rounded-2xl flex items-center justify-center">
-                    <ShoppingBag size={100} className="text-brand-gold opacity-40" />
-                  </div>
-                  <p className="text-[#0E3B2E] font-serif text-2xl italic">Premium Wellness Support</p>
+              <div className="absolute -inset-4 bg-brand-gold/5 rounded-[40px] blur-2xl -z-10" />
+              <div className="relative z-10 card p-3 bg-white border-brand-champagne/20 shadow-2xl rounded-[32px] overflow-hidden group">
+                <div className="aspect-[4/5] rounded-[24px] overflow-hidden relative">
+                   <img 
+                    src="https://images.unsplash.com/photo-1589156229687-496a31ad1d1f?auto=format&fit=crop&q=80&w=1000" 
+                    alt="Premium Wellness Lifestyle"
+                    className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                    loading="eager"
+                   />
+                   <div className="absolute inset-0 bg-gradient-to-t from-[#0E3B2E]/40 to-transparent opacity-60" />
+                   <div className="absolute bottom-6 left-6 right-6">
+                      <div className="p-4 bg-white/90 backdrop-blur-md rounded-2xl border border-white/50 shadow-lg house-shadow">
+                         <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 bg-brand-gold rounded-full flex items-center justify-center text-white shrink-0">
+                               <Heart size={20} />
+                            </div>
+                            <div className="text-left">
+                               <p className="text-[10px] font-bold text-brand-gold uppercase tracking-[0.2em] mb-0.5">Vitality First</p>
+                               <p className="text-xs font-serif text-[#0E3B2E] leading-tight">Premium care for your daily wellness journey.</p>
+                            </div>
+                         </div>
+                      </div>
+                   </div>
                 </div>
               </div>
+              
+              {/* Trust Badge Floating */}
+              <motion.div 
+                animate={{ y: [0, -10, 0] }}
+                transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+                className="absolute -bottom-6 -left-6 z-20 bg-[#0E3B2E] text-white p-4 rounded-2xl shadow-xl hidden sm:block border-4 border-brand-ivory"
+              >
+                  <p className="text-[10px] uppercase tracking-widest font-bold text-brand-gold mb-1 text-left">Guaranteed</p>
+                  <p className="text-sm font-serif">Selected Quality</p>
+              </motion.div>
             </motion.div>
           </div>
         </div>
@@ -171,10 +204,10 @@ export default function Home() {
             viewport={{ once: true }}
             className="space-y-6"
           >
-            <h2 className="text-4xl lg:text-5xl text-[#0E3B2E]">{siteContent.about.title.split(' ').slice(0,-1).join(' ')} <span className="text-brand-gold">{siteContent.about.title.split(' ').slice(-1)}</span></h2>
+            <h2 className="text-4xl lg:text-5xl text-[#0E3B2E]">{content.about.title.split(' ').slice(0,-1).join(' ')} <span className="text-brand-gold">{content.about.title.split(' ').slice(-1)}</span></h2>
             <div className="w-20 h-1.5 bg-brand-gold rounded-full" />
             <p className="text-lg text-brand-grey leading-relaxed">
-              {siteContent.about.description}
+              {content.about.description}
             </p>
             <p className="text-lg text-brand-grey leading-relaxed">
               Our goal is simple: to help customers understand available product options, choose what fits their wellness routine, and order with confidence through WhatsApp.
@@ -196,7 +229,7 @@ export default function Home() {
               <div className="relative z-10 space-y-4 text-center">
                 <MapPin size={48} className="mx-auto text-brand-gold" />
                 <h3 className="text-3xl text-white">Based in Akwa Ibom</h3>
-                <p className="text-brand-champagne/80 max-w-xs">{siteContent.contact.serving}</p>
+                <p className="text-brand-champagne/80 max-w-xs">{content.contact.serving}</p>
               </div>
             </div>
           </motion.div>
@@ -207,9 +240,9 @@ export default function Home() {
       <section id="needs" className="bg-[#FAF7F0] py-24">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center space-y-16">
           <div className="space-y-4 max-w-2xl mx-auto">
-            <h2 className="text-4xl lg:text-5xl text-[#0E3B2E]">{siteContent.categories.title.split(' ').slice(0,-1).join(' ')} <span className="text-brand-gold">{siteContent.categories.title.split(' ').slice(-1)}</span></h2>
+            <h2 className="text-4xl lg:text-5xl text-[#0E3B2E]">{content.categories.title.split(' ').slice(0,-1).join(' ')} <span className="text-brand-gold">{content.categories.title.split(' ').slice(-1)}</span></h2>
             <p className="text-brand-grey text-lg">
-              {siteContent.categories.subtitle}
+              {content.categories.subtitle}
             </p>
           </div>
 
@@ -240,7 +273,7 @@ export default function Home() {
                     <p className="text-brand-grey text-sm">{need.description}</p>
                   </div>
                   <button
-                    onClick={() => window.open(`https://wa.me/${siteContent.contact.whatsappNumber}?text=${encodeURIComponent(`Hello EMutex Nig, I am interested in ${need.whatsappTopic}. Please guide me.`)}`, '_blank')}
+                    onClick={() => window.open(`https://wa.me/${content.contact.whatsappNumber}?text=${encodeURIComponent(`Hello EMutex Nig, I am interested in ${need.whatsappTopic}. Please guide me.`)}`, '_blank')}
                     className="mt-8 btn-secondary w-full text-sm"
                   >
                     {need.buttonText}
@@ -290,14 +323,14 @@ export default function Home() {
       <section id="how-to-order" className="bg-[#FAF7F0] py-24 overflow-hidden relative">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center space-y-16 relative z-10">
           <div className="space-y-4 max-w-2xl mx-auto">
-            <h2 className="text-4xl lg:text-5xl text-[#0E3B2E]">How to Order from <span className="text-brand-gold italic">EMutex Nig</span></h2>
+            <h2 className="text-4xl lg:text-5xl text-[#0E3B2E]">How to Order from <span className="text-brand-gold italic">{content.brand.name}</span></h2>
             <p className="text-brand-grey text-lg">
               We make it easy to get the wellness support you need through a simple WhatsApp conversation.
             </p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {siteContent.howToOrder.steps.map((step, i) => (
+            {content.howToOrder.steps.map((step, i) => (
               <div key={i} className="bg-white border border-brand-champagne/30 p-8 rounded-2xl shadow-sm space-y-4 text-left">
                 <div className="text-4xl font-bold text-brand-gold/30">0{i+1}</div>
                 <h3 className="text-xl font-bold text-[#0E3B2E]">{step.title}</h3>
@@ -315,17 +348,17 @@ export default function Home() {
             <MessageCircle size={300} />
           </div>
           <div className="relative z-10 space-y-8">
-            <h2 className="text-4xl lg:text-5xl text-white">{siteContent.finalCta.title.split(' ').slice(0,-1).join(' ')} <span className="text-brand-gold italic">{siteContent.finalCta.title.split(' ').slice(-1)}</span></h2>
+            <h2 className="text-4xl lg:text-5xl text-white">{content.finalCta.title.split(' ').slice(0,-1).join(' ')} <span className="text-brand-gold italic">{content.finalCta.title.split(' ').slice(-1)}</span></h2>
             <p className="text-lg lg:text-xl text-brand-champagne/80 max-w-3xl mx-auto leading-relaxed">
-              {siteContent.finalCta.subtitle}
+              {content.finalCta.subtitle}
             </p>
             <div className="pt-4 space-y-6">
               <button
-                onClick={() => window.open(`https://wa.me/${siteContent.contact.whatsappNumber}?text=${encodeURIComponent(siteContent.finalCta.subtitle)}`, '_blank')}
+                onClick={() => window.open(`https://wa.me/${content.contact.whatsappNumber}?text=${encodeURIComponent(content.finalCta.subtitle)}`, '_blank')}
                 className="btn-primary px-12 py-5 text-xl inline-flex items-center gap-3 bg-brand-gold hover:bg-white hover:text-brand-emerald transition-all font-bold border-0 text-white"
               >
                 <MessageCircle size={24} />
-                {siteContent.finalCta.buttonText}
+                {content.finalCta.buttonText}
               </button>
               <div className="flex items-center justify-center flex-wrap gap-4 text-[10px] sm:text-xs font-medium text-brand-champagne/60 uppercase tracking-widest">
                 <span>Fast Response</span>

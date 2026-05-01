@@ -3,7 +3,7 @@ import { useParams, Link } from 'react-router-dom';
 import { collection, query, where, getDocs, limit } from 'firebase/firestore';
 import { db, handleFirestoreError, OperationType } from '../lib/firebase';
 import { Product } from '../types';
-import { siteContent } from '../data/siteContent';
+import { useSiteContent } from '../context/SiteContentContext';
 import LeadPopup from '../components/LeadPopup';
 import { motion } from 'framer-motion';
 import { MessageCircle, CheckCircle2, ChevronLeft, Sparkles, ShoppingBag, Info, Shield, HelpCircle, Heart, ChevronRight, MapPin } from 'lucide-react';
@@ -12,6 +12,7 @@ import { cn } from '../lib/utils';
 import SEO from '../components/SEO';
 
 export default function ProductDetail() {
+  const { content } = useSiteContent();
   const { slug } = useParams<{ slug: string }>();
   const [product, setProduct] = useState<Product | null>(null);
   const [loading, setLoading] = useState(true);
@@ -78,8 +79,8 @@ export default function ProductDetail() {
     );
   }
 
-  const defaultWhatsappMsg = `Hello EMutex Nig, I am interested in ${product.name}. Please send me the current price, product details, delivery options, and how I can order.`;
-  const whatsappUrl = `https://wa.me/${siteContent.contact.whatsappNumber}?text=${encodeURIComponent(
+  const defaultWhatsappMsg = `Hello ${content.brand.name}, I am interested in ${product.name}. Please send me the current price, product details, delivery options, and how I can order.`;
+  const whatsappUrl = `https://wa.me/${content.contact.whatsappNumber}?text=${encodeURIComponent(
     product.whatsappMessage || defaultWhatsappMsg
   )}`;
 
@@ -108,7 +109,7 @@ export default function ProductDetail() {
     <div className="pb-24 bg-brand-cream/30 min-h-screen">
       <SEO 
         title={product.name}
-        description={product.shortDescription || `Learn more about ${product.name} from EMutex Nig, a Nigerian wellness product brand offering carefully selected products for daily wellness support and better living.`}
+        description={product.shortDescription || `Learn more about ${product.name} from ${content.brand.name}, a Nigerian wellness product brand offering carefully selected products for daily wellness support and better living.`}
         image={product.imageUrl}
         type="product"
         url={`https://emutexnig.com/products/${product.slug}`}

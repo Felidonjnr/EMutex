@@ -3,7 +3,7 @@ import { Link, useLocation } from 'react-router-dom';
 import { Menu, X, MessageCircle } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '../../lib/utils';
-import { siteContent } from '../../data/siteContent';
+import { useSiteContent } from '../../context/SiteContentContext';
 
 const navLinks = [
   { name: 'Home', href: '/' },
@@ -14,11 +14,12 @@ const navLinks = [
 ];
 
 export default function Navbar() {
+  const { content, loading } = useSiteContent();
   const [isOpen, setIsOpen] = useState(false);
   const location = useLocation();
 
   const handleWhatsAppClick = () => {
-    const url = `https://wa.me/${siteContent.contact.whatsappNumber}?text=${encodeURIComponent(siteContent.finalCta.subtitle)}`;
+    const url = `https://wa.me/${content.contact.whatsappNumber}?text=${encodeURIComponent(content.finalCta.subtitle)}`;
     window.open(url, '_blank');
   };
 
@@ -29,19 +30,16 @@ export default function Navbar() {
           <div className="flex-shrink-0">
             <Link to="/" className="flex items-center gap-3">
               <img
-                src={siteContent.brand.logoPath}
-                alt={`${siteContent.brand.name} Logo`}
-                className="h-9 md:h-11 w-auto object-contain"
-                onError={(e) => {
-                  (e.target as HTMLImageElement).style.display = 'none';
-                }}
+                src={content.brand.logoPath}
+                alt="EMutex Nig logo"
+                className="h-[36px] md:h-[48px] w-auto object-contain"
               />
               <div className="leading-tight">
                 <p className="text-lg font-bold text-[#0E3B2E]">
-                  {siteContent.brand.name}
+                  {content.brand.name}
                 </p>
                 <p className="hidden md:block text-[10px] text-[#6F675B] uppercase tracking-wider font-medium">
-                  {siteContent.brand.tagline}
+                  {content.brand.tagline}
                 </p>
               </div>
             </Link>
