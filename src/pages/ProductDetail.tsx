@@ -20,33 +20,65 @@ export default function ProductDetail() {
 
   useEffect(() => {
     async function fetchProduct() {
-      if (!db) {
+      if (!db || !slug) {
         setLoading(false);
         return;
       }
       try {
         setLoading(true);
         const productsRef = collection(db, 'products');
-        const q = query(productsRef, where('slug', '==', slug), limit(1));
+        
+        // 1. Try fetching by slug (Must include visible filter to match Security Rules)
+        const q = query(
+          productsRef, 
+          where('slug', '==', slug), 
+          where('visible', '==', true),
+          limit(1)
+        );
         const querySnapshot = await getDocs(q);
 
+        let productData: Product | null = null;
+
         if (!querySnapshot.empty) {
-          const productData = { id: querySnapshot.docs[0].id, ...querySnapshot.docs[0].data() } as Product;
+          productData = { id: querySnapshot.docs[0].id, ...querySnapshot.docs[0].data() } as Product;
+        } else {
+          // 2. Fallback: try fetching by document ID (User might have old link or internal ID)
+          // Security rules for 'get' might be different, but we check visibility manually here too
+          try {
+            const { doc, getDoc } = await import('firebase/firestore');
+            const docRef = doc(db, 'products', slug);
+            const docSnap = await getDoc(docRef);
+            if (docSnap.exists()) {
+              const data = docSnap.data();
+              if (data.visible === true || (data.visible as any) === 'true') {
+                productData = { id: docSnap.id, ...data } as Product;
+              }
+            }
+          } catch (e) {
+            // Document ID fetch failed, which is fine if slug failed too
+          }
+        }
+
+        if (productData) {
           setProduct(productData);
 
-          // Fetch related products
+          // Fetch related products - Simplified to avoid composite index requirements
           if (productData.category) {
             const relatedQ = query(
               productsRef, 
               where('category', '==', productData.category), 
-              where('slug', '!=', slug),
               where('visible', '==', true),
-              limit(3)
+              limit(6) // Fetch more to allow filtering current product in frontend
             );
             const relatedSnap = await getDocs(relatedQ);
-            const relatedData = relatedSnap.docs.map(doc => ({ id: doc.id, ...doc.data() } as Product));
+            const relatedData = relatedSnap.docs
+              .map(doc => ({ id: doc.id, ...doc.data() } as Product))
+              .filter(p => p.slug !== slug && p.id !== productData?.id)
+              .slice(0, 3);
             setRelatedProducts(relatedData);
           }
+        } else {
+          setProduct(null);
         }
       } catch (error) {
         console.warn(`Product detail access issues for ${slug}. Showing error state.`, error);
@@ -70,12 +102,28 @@ export default function ProductDetail() {
   if (!product) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center space-y-6 px-4 bg-brand-cream">
-        <h2 className="text-3xl font-serif text-[#0E3B2E]">Product Not Found</h2>
-        <p className="text-brand-grey">The wellness product you're looking for might have been moved or renamed.</p>
-        <Link to="/products" className="btn-primary flex items-center gap-2">
-          <ChevronLeft size={20} />
-          Back to Catalogue
-        </Link>
+        <div className="w-20 h-20 bg-brand-gold/10 rounded-full flex items-center justify-center text-brand-gold">
+          <ShoppingBag size={40} />
+        </div>
+        <div className="text-center space-y-2">
+          <h2 className="text-3xl font-serif text-[#0E3B2E]">Product Not Found</h2>
+          <p className="text-brand-grey max-w-sm">We could not load this product right now. It might be hidden or the link is incorrect. Please contact us on WhatsApp if you need help.</p>
+        </div>
+        <div className="flex flex-col sm:flex-row gap-4">
+          <Link to="/products" className="btn-primary flex items-center justify-center gap-2 px-8">
+            <ChevronLeft size={20} />
+            Back to Catalogue
+          </Link>
+          <a 
+            href={`https://wa.me/${content.contact.whatsappNumber}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="btn-secondary flex items-center justify-center gap-2 px-8"
+          >
+            <MessageCircle size={20} />
+            Ask on WhatsApp
+          </a>
+        </div>
       </div>
     );
   }
