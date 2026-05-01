@@ -7,9 +7,13 @@ export const siteContent = {
   hero: {
     label: 'Akwa Ibom-based wellness brand',
     headline: 'Premium Wellness Support for Better Living',
-    subheadline: 'Carefully selected wellness and vitality products for Nigerian adults who want daily energy support, body balance, confidence, and better self-care.',
+    subheadline: 'Carefully selected wellness and vitality products for Nigerian adults context.',
     ctaPrimary: 'View Products',
     ctaSecondary: 'WhatsApp Us',
+    heroImageUrl: '',
+    heroImageAlt: 'Premium wellness and vitality support from EMutex Nig',
+    heroImageCaption: 'Premium Wellness Support',
+    heroBadgeText: 'Akwa Ibom Based',
   },
   trust: {
     label: 'Why Choose EMutex Nig?',
@@ -66,9 +70,18 @@ export const siteContent = {
     serving: 'Serving wellness-conscious adults across Nigeria',
     address: 'Akwa Ibom State, Nigeria',
   },
+  footer: {
+    description: 'Carefully selected wellness products for Nigerians nationwide.',
+    copyright: 'All rights reserved.',
+  },
+  seo: {
+    metaTitle: 'EMutex Nig — Premium Wellness Support',
+    metaDescription: 'Carefully selected wellness and vitality products for Nigerian adults.',
+    ogImageUrl: '',
+    keywords: 'wellness, nigerian health, vitality, akwa ibom',
+  },
   social: {
     facebook: '',
-    instagram: '',
     twitter: '',
   }
 };

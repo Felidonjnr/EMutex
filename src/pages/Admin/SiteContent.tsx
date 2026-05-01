@@ -231,6 +231,45 @@ export default function AdminSiteContent() {
                       className="w-full px-4 py-3 bg-brand-ivory/30 border border-brand-champagne/20 rounded-xl"
                     />
                   </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-1">
+                      <label className="text-xs font-bold text-brand-emerald uppercase tracking-wider">Hero Image URL (Cloudinary)</label>
+                      <input 
+                        type="text" 
+                        value={content.hero.heroImageUrl || ''}
+                        onChange={(e) => updateField('hero', 'heroImageUrl', e.target.value)}
+                        className="w-full px-4 py-3 bg-brand-ivory/30 border border-brand-champagne/20 rounded-xl"
+                        placeholder="https://res.cloudinary.com/..."
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-xs font-bold text-brand-emerald uppercase tracking-wider">Hero Image Alt Text</label>
+                      <input 
+                        type="text" 
+                        value={content.hero.heroImageAlt || ''}
+                        onChange={(e) => updateField('hero', 'heroImageAlt', e.target.value)}
+                        className="w-full px-4 py-3 bg-brand-ivory/30 border border-brand-champagne/20 rounded-xl"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-xs font-bold text-brand-emerald uppercase tracking-wider">Hero Image Caption</label>
+                      <input 
+                        type="text" 
+                        value={content.hero.heroImageCaption || ''}
+                        onChange={(e) => updateField('hero', 'heroImageCaption', e.target.value)}
+                        className="w-full px-4 py-3 bg-brand-ivory/30 border border-brand-champagne/20 rounded-xl"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-xs font-bold text-brand-emerald uppercase tracking-wider">Hero Small Badge Text</label>
+                      <input 
+                        type="text" 
+                        value={content.hero.heroBadgeText || ''}
+                        onChange={(e) => updateField('hero', 'heroBadgeText', e.target.value)}
+                        className="w-full px-4 py-3 bg-brand-ivory/30 border border-brand-champagne/20 rounded-xl"
+                      />
+                    </div>
+                  </div>
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-1">
                       <label className="text-xs font-bold text-brand-emerald uppercase tracking-wider">Primary Button Text</label>
@@ -326,6 +365,24 @@ export default function AdminSiteContent() {
                       className="w-full px-4 py-3 bg-brand-ivory/30 border border-brand-champagne/20 rounded-xl"
                     />
                   </div>
+                  <div className="col-span-full space-y-1">
+                    <label className="text-xs font-bold text-brand-emerald uppercase tracking-wider">Footer Description</label>
+                    <textarea 
+                      rows={3}
+                      value={content.footer?.description || ''}
+                      onChange={(e) => updateField('footer', 'description', e.target.value)}
+                      className="w-full px-4 py-3 bg-brand-ivory/30 border border-brand-champagne/20 rounded-xl focus:ring-2 focus:ring-brand-gold focus:border-transparent outline-none transition-all"
+                    />
+                  </div>
+                  <div className="col-span-full space-y-1">
+                    <label className="text-xs font-bold text-brand-emerald uppercase tracking-wider">Copyright Text</label>
+                    <input 
+                      type="text" 
+                      value={content.footer?.copyright || ''}
+                      onChange={(e) => updateField('footer', 'copyright', e.target.value)}
+                      className="w-full px-4 py-3 bg-brand-ivory/30 border border-brand-champagne/20 rounded-xl focus:ring-2 focus:ring-brand-gold focus:border-transparent outline-none transition-all"
+                    />
+                  </div>
                 </div>
               </div>
 
@@ -342,16 +399,6 @@ export default function AdminSiteContent() {
                       onChange={(e) => updateField('social', 'facebook', e.target.value)}
                       className="w-full px-4 py-3 bg-brand-ivory/30 border border-brand-champagne/20 rounded-xl"
                       placeholder="https://facebook.com/..."
-                    />
-                  </div>
-                  <div className="space-y-1">
-                    <label className="text-xs font-bold text-brand-emerald uppercase tracking-wider">Instagram Link</label>
-                    <input 
-                      type="text" 
-                      value={content.social.instagram}
-                      onChange={(e) => updateField('social', 'instagram', e.target.value)}
-                      className="w-full px-4 py-3 bg-brand-ivory/30 border border-brand-champagne/20 rounded-xl"
-                      placeholder="https://instagram.com/..."
                     />
                   </div>
                 </div>
@@ -375,8 +422,8 @@ export default function AdminSiteContent() {
                     <label className="text-xs font-bold text-brand-emerald uppercase tracking-wider">Meta Title (Browser tab name)</label>
                     <input 
                       type="text" 
-                      value={content.hero.label} // Reusing label or headline for now in siteContent data structure
-                      onChange={(e) => updateField('hero', 'label', e.target.value)}
+                      value={content.seo?.metaTitle || ''}
+                      onChange={(e) => updateField('seo', 'metaTitle', e.target.value)}
                       className="w-full px-4 py-3 bg-brand-ivory/30 border border-brand-champagne/20 rounded-xl"
                     />
                   </div>
@@ -384,8 +431,26 @@ export default function AdminSiteContent() {
                     <label className="text-xs font-bold text-brand-emerald uppercase tracking-wider">Meta Description</label>
                     <textarea 
                       rows={3}
-                      value={content.hero.subheadline}
-                      onChange={(e) => updateField('hero', 'subheadline', e.target.value)}
+                      value={content.seo?.metaDescription || ''}
+                      onChange={(e) => updateField('seo', 'metaDescription', e.target.value)}
+                      className="w-full px-4 py-3 bg-brand-ivory/30 border border-brand-champagne/20 rounded-xl"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-xs font-bold text-brand-emerald uppercase tracking-wider">Default OG Image URL</label>
+                    <input 
+                      type="text" 
+                      value={content.seo?.ogImageUrl || ''}
+                      onChange={(e) => updateField('seo', 'ogImageUrl', e.target.value)}
+                      className="w-full px-4 py-3 bg-brand-ivory/30 border border-brand-champagne/20 rounded-xl"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-xs font-bold text-brand-emerald uppercase tracking-wider">Keywords (Comma separated)</label>
+                    <input 
+                      type="text" 
+                      value={content.seo?.keywords || ''}
+                      onChange={(e) => updateField('seo', 'keywords', e.target.value)}
                       className="w-full px-4 py-3 bg-brand-ivory/30 border border-brand-champagne/20 rounded-xl"
                     />
                   </div>

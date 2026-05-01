@@ -49,7 +49,8 @@ export default function ProductDetail() {
           }
         }
       } catch (error) {
-        handleFirestoreError(error, OperationType.GET, `products/${slug}`);
+        console.warn(`Product detail access issues for ${slug}. Showing error state.`, error);
+        setProduct(null);
       } finally {
         setLoading(false);
       }

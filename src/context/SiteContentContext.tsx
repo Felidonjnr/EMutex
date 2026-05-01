@@ -33,8 +33,6 @@ export function SiteContentProvider({ children }: { children: React.ReactNode })
     const unsubscribe = onSnapshot(docRef, (docSnap) => {
       if (docSnap.exists()) {
         const data = docSnap.data() as Partial<SiteContent>;
-        // Deep merge or at least shallow merge top level objects to ensure all fields are present
-        // using fallback for missing sections
         const mergedContent = {
           ...fallbackContent,
           brand: { ...fallbackContent.brand, ...data.brand },
@@ -49,18 +47,16 @@ export function SiteContentProvider({ children }: { children: React.ReactNode })
           social: { ...fallbackContent.social, ...data.social },
         } as SiteContent;
 
-        // Special handling for howToOrder.steps if they are in Firestore
         if (data.howToOrder?.steps) {
             mergedContent.howToOrder.steps = data.howToOrder.steps;
         }
 
         setContent(mergedContent);
-      } else {
-        setContent(fallbackContent);
       }
       setLoading(false);
     }, (error) => {
-      console.error('Error fetching site content from Firestore:', error);
+      // Graceful fallback if Firebase is not configured or permissions denied
+      console.warn('Firestore siteContent access issues. Using local fallback.', error.message);
       setContent(fallbackContent);
       setLoading(false);
     });

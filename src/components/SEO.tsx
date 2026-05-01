@@ -1,4 +1,5 @@
 import { Helmet } from 'react-helmet-async';
+import { useSiteContent } from '../context/SiteContentContext';
 
 interface SEOProps {
   title?: string;
@@ -10,15 +11,6 @@ interface SEOProps {
   noindex?: boolean;
 }
 
-const defaultMetadata = {
-  title: 'EMutex Nig — Wellness Products for Better Living',
-  description: 'Premium Nigerian wellness and vitality products for adults who want daily wellness support, body balance, confidence, and better living. Based in Akwa Ibom, serving customers across Nigeria.',
-  keywords: 'EMutex Nig, wellness products Nigeria, vitality products Nigeria, adult wellness products, Akwa Ibom wellness brand, daily wellness support, body balance, wellness products for better living, Nigerian wellness store',
-  image: '/images/emutex-logo.png',
-  url: 'https://emutexnig.com', // Replace with actual domain if known
-  type: 'website' as const,
-};
-
 export const SEO = ({
   title,
   description,
@@ -28,7 +20,18 @@ export const SEO = ({
   type = 'website',
   noindex = false,
 }: SEOProps) => {
-  const seoTitle = title ? `${title} | EMutex Nig` : defaultMetadata.title;
+  const { content } = useSiteContent();
+
+  const defaultMetadata = {
+    title: content.seo?.metaTitle || 'EMutex Nig — Wellness Products for Better Living',
+    description: content.seo?.metaDescription || 'Premium Nigerian wellness and vitality products for adults.',
+    keywords: content.seo?.keywords || 'wellness products Nigeria, vitality products Nigeria',
+    image: content.seo?.ogImageUrl || '/images/emutex-logo.png',
+    url: 'https://emutexnig.com',
+    type: 'website' as const,
+  };
+
+  const seoTitle = title ? `${title} | ${content.brand.name}` : defaultMetadata.title;
   const seoDescription = description || defaultMetadata.description;
   const seoKeywords = keywords || defaultMetadata.keywords;
   const seoImage = image || defaultMetadata.image;

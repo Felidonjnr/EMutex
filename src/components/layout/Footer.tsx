@@ -29,7 +29,7 @@ export default function Footer() {
               </div>
             </Link>
             <p className="text-brand-ivory/80 text-sm leading-relaxed">
-              {content.about.description}
+              {content.footer?.description || content.about.description}
             </p>
           </div>
 
@@ -77,7 +77,6 @@ export default function Footer() {
                 <span className="block text-brand-champagne font-medium mb-1">Follow Us</span>
                 <div className="flex gap-4 mt-2">
                   <a href={content.social.facebook || '#'} className="hover:text-brand-gold transition-colors" target="_blank" rel="noopener noreferrer">Facebook</a>
-                  <a href={content.social.instagram || '#'} className="hover:text-brand-gold transition-colors" target="_blank" rel="noopener noreferrer">Instagram</a>
                 </div>
               </li>
             </ul>
@@ -86,7 +85,7 @@ export default function Footer() {
 
         <div className="pt-8 border-t border-white/10 text-center">
           <p className="text-xs text-brand-ivory/60">
-            © {new Date().getFullYear()} {content.brand.name}. All rights reserved.
+            © {new Date().getFullYear()} {content.brand.name}. {content.footer?.copyright || 'All rights reserved.'}
           </p>
         </div>
       </div>

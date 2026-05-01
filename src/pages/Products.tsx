@@ -45,7 +45,8 @@ export default function Products() {
 
         setProducts(data);
       } catch (error) {
-        handleFirestoreError(error, OperationType.LIST, 'products');
+        console.warn("Products access issues. Showing empty state.", error);
+        setProducts([]);
       } finally {
         setLoading(false);
       }

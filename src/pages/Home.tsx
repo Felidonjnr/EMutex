@@ -46,7 +46,8 @@ export default function Home() {
           .slice(0, 6);
         setFeaturedProducts(products);
       } catch (error) {
-        console.error("Error fetching featured products:", error);
+        console.warn("Featured products access issues. Showing empty state.", error);
+        setFeaturedProducts([]);
       } finally {
         setLoading(false);
       }
@@ -62,7 +63,8 @@ export default function Home() {
         const needs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as WellnessNeed));
         setWellnessNeeds(needs);
       } catch (error) {
-        console.error("Error fetching wellness needs:", error);
+        console.warn("Wellness needs access issues. Showing empty state.", error);
+        setWellnessNeeds([]);
       } finally {
         setNeedsLoading(false);
       }
@@ -134,12 +136,19 @@ export default function Home() {
               <div className="absolute -inset-4 bg-brand-gold/5 rounded-[40px] blur-2xl -z-10" />
               <div className="relative z-10 card p-3 bg-white border-brand-champagne/20 shadow-2xl rounded-[32px] overflow-hidden group">
                 <div className="aspect-[4/5] rounded-[24px] overflow-hidden relative">
-                   <img 
-                    src="https://images.unsplash.com/photo-1589156229687-496a31ad1d1f?auto=format&fit=crop&q=80&w=1000" 
-                    alt="Premium Wellness Lifestyle"
-                    className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
-                    loading="eager"
-                   />
+                   {content.hero.heroImageUrl ? (
+                     <img 
+                      src={content.hero.heroImageUrl} 
+                      alt={content.hero.heroImageAlt || 'Premium Wellness Lifestyle'}
+                      className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                      loading="eager"
+                      referrerPolicy="no-referrer"
+                     />
+                   ) : (
+                     <div className="w-full h-full bg-brand-mist flex items-center justify-center">
+                        <ShoppingBag size={80} className="text-brand-gold opacity-20" />
+                     </div>
+                   )}
                    <div className="absolute inset-0 bg-gradient-to-t from-[#0E3B2E]/40 to-transparent opacity-60" />
                    <div className="absolute bottom-6 left-6 right-6">
                       <div className="p-4 bg-white/90 backdrop-blur-md rounded-2xl border border-white/50 shadow-lg house-shadow">
@@ -148,8 +157,12 @@ export default function Home() {
                                <Heart size={20} />
                             </div>
                             <div className="text-left">
-                               <p className="text-[10px] font-bold text-brand-gold uppercase tracking-[0.2em] mb-0.5">Vitality First</p>
-                               <p className="text-xs font-serif text-[#0E3B2E] leading-tight">Premium care for your daily wellness journey.</p>
+                               <p className="text-[10px] font-bold text-brand-gold uppercase tracking-[0.2em] mb-0.5">
+                                 {content.hero.heroBadgeText || 'Vitality First'}
+                               </p>
+                               <p className="text-xs font-serif text-[#0E3B2E] leading-tight">
+                                 {content.hero.heroImageCaption || 'Premium care for your daily wellness journey.'}
+                               </p>
                             </div>
                          </div>
                       </div>
