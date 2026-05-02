@@ -3,7 +3,7 @@ import { collection, addDoc, query, where, getDocs, updateDoc, doc, serverTimest
 import { db } from '../../lib/firebase';
 import { Upload, Download, FileText, CheckCircle, AlertCircle, X, Loader2, Table, Globe, ArrowUpRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { cn } from '../../lib/utils';
+import { cn, generateSlug } from '../../lib/utils';
 
 interface BundleImportPreview {
   name: string;
@@ -41,12 +41,6 @@ export default function BundleCSVImport({ onClose, onSuccess }: BundleCSVImportP
 
   const FALLBACK_IMAGE = 'https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?auto=format&fit=crop&q=80&w=800';
 
-  const generateSlug = (name: string) => {
-    return name?.toLowerCase()
-      .replace(/[^a-z0-9]+/g, '-')
-      .replace(/(^-|-$)+/g, '');
-  };
-
   const downloadTemplate = () => {
     const headers = ['name', 'slug', 'shortDescription', 'fullDescription', 'imageUrl', 'price', 'availability', 'includedProductSlugs', 'includedItems', 'featured', 'visible', 'order', 'whatsappMessage'];
     const example = ['Sample Wellness Bundle', 'sample-bundle', 'Short blurb here', 'Full description here', 'https://example.com/img.jpg', '45000', 'In Stock', 'vitality-product,cleanse-product', 'Free shaker bottle,Health guide', 'true', 'true', '0', 'I want the sample bundle'];
@@ -72,6 +66,7 @@ export default function BundleCSVImport({ onClose, onSuccess }: BundleCSVImportP
       const headers = lines[0].toLowerCase().split(',').map(h => h.trim());
       
       const parsedPreview: BundleImportPreview[] = [];
+      const usedSlugsInBatch = new Set<string>();
 
       for (let i = 1; i < lines.length; i++) {
         const currentLine = lines[i].split(',').map(v => v.trim());
@@ -97,10 +92,19 @@ export default function BundleCSVImport({ onClose, onSuccess }: BundleCSVImportP
           errors.push('Bundle must have either linked products (slugs) or manual items');
         }
 
-        // 3. Defaults: Slug
-        let slug = String(row.slug || '').trim();
-        if (!slug && name) {
-          slug = generateSlug(name);
+        // 3. Slug generation (Rule: Ignore CSV slug, generate fresh from name)
+        let slug = '';
+        if (name) {
+          const baseSlug = generateSlug(name);
+          slug = baseSlug;
+          
+          // Ensure uniqueness within the batch
+          let counter = 2;
+          while (usedSlugsInBatch.has(slug)) {
+            slug = `${baseSlug}-${counter}`;
+            counter++;
+          }
+          usedSlugsInBatch.add(slug);
         }
 
         // 4. Defaults: Category

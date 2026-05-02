@@ -19,11 +19,12 @@ import {
   Loader2,
   ArrowUpRight,
   ShoppingBag,
-  Wrench
+  Wrench,
+  CheckCircle2
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { cn } from '../../lib/utils';
+import { cn, generateSlug } from '../../lib/utils';
 import ProductForm from './ProductForm';
 import ProductCSVImport from '../../components/admin/ProductCSVImport';
 
@@ -85,56 +86,47 @@ export default function AdminProducts() {
   };
 
   const repairProducts = async () => {
-    if (!window.confirm("Are you sure you want to repair all product fields? This will fix missing slugs, ensure correct visibility, and repair numeric orders.")) return;
+    if (!window.confirm("Are you sure you want to repair all product fields? This will fix missing slugs, ensure correct visibility, repair numeric orders, and normalize all metadata fields.")) return;
     
     try {
       setRepairing(true);
       const snapshot = await getDocs(collection(db!, 'products'));
       const batch: Promise<void>[] = [];
       const usedSlugs = new Set<string>();
-
-      const generateSlug = (name: string) => {
-        return name?.toLowerCase()
-          .replace(/[^a-z0-9]+/g, '-')
-          .replace(/(^-|-$)+/g, '');
-      };
       
       snapshot.docs.forEach(docSnap => {
         const data = docSnap.data();
         const updates: any = {};
         
-        // 1. Repair Slug
-        let currentSlug = String(data.slug || '').trim();
-        if (!currentSlug) {
-           currentSlug = generateSlug(data.name || 'product');
-        }
-
-        // Deduplicate slug
-        let finalSlug = currentSlug;
+        // 1. Repair Slug (Rule: Generate from name, ensure unique)
+        let baseSlug = generateSlug(data.name || 'product');
+        let finalSlug = baseSlug;
         let counter = 2;
+        
         while (usedSlugs.has(finalSlug)) {
-           finalSlug = `${currentSlug}-${counter}`;
+           finalSlug = `${baseSlug}-${counter}`;
            counter++;
         }
         usedSlugs.add(finalSlug);
-
+        
         if (finalSlug !== data.slug) {
            updates.slug = finalSlug;
         }
 
-        // 2. Ensure booleans
+        // 2. Ensure booleans (Real booleans, not strings)
         if (typeof data.visible !== 'boolean') updates.visible = data.visible === 'true' || data.visible === true || data.visible === undefined;
         if (typeof data.showInCatalogue !== 'boolean') updates.showInCatalogue = data.showInCatalogue === 'true' || data.showInCatalogue === true || data.showInCatalogue === undefined;
         if (typeof data.showOnHomepage !== 'boolean') updates.showOnHomepage = data.showOnHomepage === 'true' || data.showOnHomepage === true;
         if (typeof data.featured !== 'boolean') updates.featured = data.featured === 'true' || data.featured === true;
         
-        // 3. Ensure number
-        if (typeof data.productOrder !== 'number') updates.productOrder = parseInt(data.productOrder as any) || 999;
+        // 3. Ensure number (Real numbers)
+        if (typeof data.productOrder !== 'number') updates.productOrder = parseInt(String(data.productOrder)) || 999;
         
-        // 4. Defaults
+        // 4. Defaults & Metadata
         if (!data.category) updates.category = "General Wellness";
         if (!data.availability) updates.availability = "In Stock";
         if (!data.price) updates.price = "Confirm on WhatsApp";
+        if (!data.whatsappCtaText) updates.whatsappCtaText = "Confirm Latest Price on WhatsApp";
         if (!data.shortDescription) updates.shortDescription = "Carefully selected wellness product for daily support and better living.";
         if (!data.fullDescription) updates.fullDescription = data.shortDescription || updates.shortDescription;
         if (!data.imageUrl) updates.imageUrl = 'https://images.unsplash.com/photo-1512069772995-ec65ed45afd6?auto=format&fit=crop&q=80&w=800';

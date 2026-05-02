@@ -8,7 +8,7 @@ import { Product } from '../../types';
 import { X, Plus, Trash2, Save, Info, Settings as SettingsIcon, Layout, MessageSquare } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { CATEGORIES } from '../../constants';
-import { cn } from '../../lib/utils';
+import { cn, generateSlug } from '../../lib/utils';
 
 const productSchema = z.object({
   name: z.string().min(2, "Name is required"),
@@ -82,8 +82,12 @@ export default function ProductForm({ product, onClose, onSuccess }: ProductForm
     try {
       setIsSubmitting(true);
       setSubmitError(null);
+      
+      const finalSlug = (data.slug || generateSlug(data.name)).trim();
+      
       const payload = {
         ...data,
+        slug: finalSlug,
         updatedAt: serverTimestamp(),
       };
 
@@ -112,7 +116,7 @@ export default function ProductForm({ product, onClose, onSuccess }: ProductForm
   };
 
   const name = watch('name');
-  const autoSlug = (name || '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '');
+  const autoSlugValue = generateSlug(name || '');
 
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
@@ -172,7 +176,7 @@ export default function ProductForm({ product, onClose, onSuccess }: ProductForm
                     <div className="space-y-1">
                        <label className="text-xs font-bold text-brand-emerald">Product Name</label>
                        <input {...register('name')} className="w-full px-4 py-3 bg-white border border-brand-champagne/30 rounded-xl" placeholder="e.g. Ginseng Tonic Wine" />
-                       <button type="button" onClick={() => setValue('slug', autoSlug)} className="text-[10px] text-brand-gold hover:underline mt-1">Auto-generate slug</button>
+                       <button type="button" onClick={() => setValue('slug', autoSlugValue)} className="text-[10px] text-brand-gold hover:underline mt-1">Auto-generate slug</button>
                        {errors.name && <p className="text-red-500 text-[10px] mt-1">{(errors.name as any).message}</p>}
                     </div>
                     <div className="space-y-1">

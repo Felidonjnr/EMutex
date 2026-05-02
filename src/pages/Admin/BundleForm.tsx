@@ -7,7 +7,7 @@ import { db, handleFirestoreError, OperationType } from '../../lib/firebase';
 import { Bundle, Product } from '../../types';
 import { X, Plus, Trash2, Save, ShoppingBag, Package, MessageCircle } from 'lucide-react';
 import { motion } from 'framer-motion';
-import { cn } from '../../lib/utils';
+import { cn, generateSlug } from '../../lib/utils';
 
 const bundleSchema = z.object({
   name: z.string().min(2, "Name is required"),
@@ -96,10 +96,12 @@ export default function BundleForm({ bundle, products, onClose, onSuccess }: Bun
       setSubmitError(null);
       
       const formData = data as BundleFormData;
+      const finalSlug = (formData.slug || generateSlug(formData.name)).trim();
       
       // Clean up includedItems to remove empty strings
       const payload = {
         ...formData,
+        slug: finalSlug,
         includedItems: formData.includedItems.filter(item => item.trim() !== ''),
         updatedAt: serverTimestamp(),
       };
@@ -126,7 +128,7 @@ export default function BundleForm({ bundle, products, onClose, onSuccess }: Bun
   };
 
   const name = watch('name');
-  const autoSlug = (name || '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '');
+  const autoSlugValue = generateSlug(name || '');
 
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
@@ -177,7 +179,7 @@ export default function BundleForm({ bundle, products, onClose, onSuccess }: Bun
                     <div className="space-y-1">
                        <label className="text-xs font-bold text-brand-emerald">Bundle Name</label>
                        <input {...register('name')} className="w-full px-4 py-3 bg-white border border-brand-champagne/30 rounded-xl" placeholder="e.g. Daily Vitality Bundle" />
-                       <button type="button" onClick={() => setValue('slug', autoSlug)} className="text-[10px] text-brand-gold hover:underline mt-1">Auto-generate slug</button>
+                       <button type="button" onClick={() => setValue('slug', autoSlugValue)} className="text-[10px] text-brand-gold hover:underline mt-1">Auto-generate slug</button>
                     </div>
                     <div className="space-y-1">
                        <label className="text-xs font-bold text-brand-emerald">Slug (URL snippet)</label>

@@ -4,6 +4,7 @@ import { db, handleFirestoreError, OperationType } from '../../lib/firebase';
 import { X, Upload, Download, FileText, CheckCircle2, AlertCircle, Loader2, Info, FileSpreadsheet, Globe, ArrowUpRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import * as XLSX from 'xlsx';
+import { generateSlug } from '../../lib/utils';
 
 interface CSVImportProps {
   onClose: () => void;
@@ -49,12 +50,6 @@ export default function ProductCSVImport({ onClose, onSuccess }: CSVImportProps)
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const FALLBACK_IMAGE = 'https://images.unsplash.com/photo-1512069772995-ec65ed45afd6?auto=format&fit=crop&q=80&w=800';
-
-  const generateSlug = (name: string) => {
-    return name?.toLowerCase()
-      .replace(/[^a-z0-9]+/g, '-')
-      .replace(/(^-|-$)+/g, '');
-  };
 
   const getTemplateData = () => {
     const headers = [
@@ -165,6 +160,8 @@ export default function ProductCSVImport({ onClose, onSuccess }: CSVImportProps)
       const worksheet = workbook.Sheets[firstSheetName];
       const rawData = XLSX.utils.sheet_to_json(worksheet);
       
+      const usedSlugsInBatch = new Set<string>();
+
       const processedData = rawData.map((row: any) => {
         const errors: string[] = [];
         const warnings: string[] = [];
@@ -173,10 +170,19 @@ export default function ProductCSVImport({ onClose, onSuccess }: CSVImportProps)
         const name = String(row.name || '').trim();
         if (!name) errors.push('Name is required');
 
-        // 2. Slug defaults
-        let slug = String(row.slug || '').trim();
-        if (!slug && name) {
-          slug = generateSlug(name);
+        // 2. Slug generation (Rule: Ignore CSV slug, generate fresh from name)
+        let slug = '';
+        if (name) {
+          const baseSlug = generateSlug(name);
+          slug = baseSlug;
+          
+          // Ensure uniqueness within the batch
+          let counter = 2;
+          while (usedSlugsInBatch.has(slug)) {
+            slug = `${baseSlug}-${counter}`;
+            counter++;
+          }
+          usedSlugsInBatch.add(slug);
         }
 
         // 3. Category defaults
