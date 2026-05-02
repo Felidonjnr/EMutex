@@ -85,30 +85,60 @@ export default function AdminProducts() {
   };
 
   const repairProducts = async () => {
-    if (!window.confirm("Are you sure you want to repair all product visibility fields? This will ensure all products have correct boolean values and numeric order fields.")) return;
+    if (!window.confirm("Are you sure you want to repair all product fields? This will fix missing slugs, ensure correct visibility, and repair numeric orders.")) return;
     
     try {
       setRepairing(true);
       const snapshot = await getDocs(collection(db!, 'products'));
       const batch: Promise<void>[] = [];
+      const usedSlugs = new Set<string>();
+
+      const generateSlug = (name: string) => {
+        return name?.toLowerCase()
+          .replace(/[^a-z0-9]+/g, '-')
+          .replace(/(^-|-$)+/g, '');
+      };
       
       snapshot.docs.forEach(docSnap => {
         const data = docSnap.data();
         const updates: any = {};
         
-        // Ensure booleans
+        // 1. Repair Slug
+        let currentSlug = String(data.slug || '').trim();
+        if (!currentSlug) {
+           currentSlug = generateSlug(data.name || 'product');
+        }
+
+        // Deduplicate slug
+        let finalSlug = currentSlug;
+        let counter = 2;
+        while (usedSlugs.has(finalSlug)) {
+           finalSlug = `${currentSlug}-${counter}`;
+           counter++;
+        }
+        usedSlugs.add(finalSlug);
+
+        if (finalSlug !== data.slug) {
+           updates.slug = finalSlug;
+        }
+
+        // 2. Ensure booleans
         if (typeof data.visible !== 'boolean') updates.visible = data.visible === 'true' || data.visible === true || data.visible === undefined;
         if (typeof data.showInCatalogue !== 'boolean') updates.showInCatalogue = data.showInCatalogue === 'true' || data.showInCatalogue === true || data.showInCatalogue === undefined;
         if (typeof data.showOnHomepage !== 'boolean') updates.showOnHomepage = data.showOnHomepage === 'true' || data.showOnHomepage === true;
         if (typeof data.featured !== 'boolean') updates.featured = data.featured === 'true' || data.featured === true;
         
-        // Ensure number
-        if (typeof data.productOrder !== 'number') updates.productOrder = parseInt(data.productOrder) || 999;
+        // 3. Ensure number
+        if (typeof data.productOrder !== 'number') updates.productOrder = parseInt(data.productOrder as any) || 999;
         
-        // Defaults
+        // 4. Defaults
+        if (!data.category) updates.category = "General Wellness";
         if (!data.availability) updates.availability = "In Stock";
         if (!data.price) updates.price = "Confirm on WhatsApp";
-        
+        if (!data.shortDescription) updates.shortDescription = "Carefully selected wellness product for daily support and better living.";
+        if (!data.fullDescription) updates.fullDescription = data.shortDescription || updates.shortDescription;
+        if (!data.imageUrl) updates.imageUrl = 'https://images.unsplash.com/photo-1512069772995-ec65ed45afd6?auto=format&fit=crop&q=80&w=800';
+
         if (Object.keys(updates).length > 0) {
           batch.push(updateDoc(docSnap.ref, { ...updates, updatedAt: serverTimestamp() }));
         }
@@ -116,10 +146,10 @@ export default function AdminProducts() {
       
       if (batch.length > 0) {
         await Promise.all(batch);
-        alert(`Successfully repaired ${batch.length} products.`);
+        alert(`Successfully repaired ${batch.length} products with proper slugs and fields.`);
         fetchProducts();
       } else {
-        alert("All products already have correct visibility settings.");
+        alert("All products are already in perfect shape.");
       }
     } catch (error) {
       console.error("Repair failed:", error);

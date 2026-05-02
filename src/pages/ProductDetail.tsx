@@ -6,7 +6,7 @@ import { Product, Bundle } from '../types';
 import { useSiteContent } from '../context/SiteContentContext';
 import LeadPopup from '../components/LeadPopup';
 import { motion } from 'framer-motion';
-import { MessageCircle, CheckCircle2, ChevronLeft, Sparkles, ShoppingBag, Info, Shield, HelpCircle, Heart, ChevronRight, MapPin, Package } from 'lucide-react';
+import { MessageCircle, CheckCircle2, ChevronLeft, Sparkles, ShoppingBag, Info, Shield, HelpCircle, Heart, ChevronRight, MapPin, Package, AlertTriangle } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import { cn } from '../lib/utils';
 import SEO from '../components/SEO';
@@ -16,6 +16,7 @@ export default function ProductDetail() {
   const { slug } = useParams<{ slug: string }>();
   const [product, setProduct] = useState<Product | null>(null);
   const [loading, setLoading] = useState(true);
+  const [errorType, setErrorType] = useState<string | null>(null);
   const [relatedProducts, setRelatedProducts] = useState<Product[]>([]);
   const [relatedBundles, setRelatedBundles] = useState<Bundle[]>([]);
 
@@ -29,22 +30,30 @@ export default function ProductDetail() {
         setLoading(true);
         const productsRef = collection(db, 'products');
         
-        // 1. Try fetching by slug (Must include visible filter to match Security Rules)
+        // 1. Try fetching by slug
         const q = query(
           productsRef, 
           where('slug', '==', slug), 
           where('visible', '==', true),
           limit(1)
         );
-        const querySnapshot = await getDocs(q);
+        let querySnapshot;
+        try {
+          querySnapshot = await getDocs(q);
+        } catch (err: any) {
+           if (err.message?.includes('Missing or insufficient permissions') || err.message?.includes('offline')) {
+             setErrorType("CONNECTION_ERROR");
+             return;
+           }
+           throw err;
+        }
 
         let productData: Product | null = null;
 
         if (!querySnapshot.empty) {
           productData = { id: querySnapshot.docs[0].id, ...querySnapshot.docs[0].data() } as Product;
         } else {
-          // 2. Fallback: try fetching by document ID (User might have old link or internal ID)
-          // Security rules for 'get' might be different, but we check visibility manually here too
+          // 2. Fallback: try fetching by document ID
           try {
             const { doc, getDoc } = await import('firebase/firestore');
             const docRef = doc(db, 'products', slug);
@@ -56,27 +65,32 @@ export default function ProductDetail() {
               }
             }
           } catch (e) {
-            // Document ID fetch failed, which is fine if slug failed too
+            // ID lookup failed
           }
         }
 
         if (productData) {
           setProduct(productData);
 
-          // Fetch related products - Simplified to avoid composite index requirements
+          // Fetch related products - Simplified to avoid index errors
+          // We query by category and visible only
           if (productData.category) {
-            const relatedQ = query(
-              productsRef, 
-              where('category', '==', productData.category), 
-              where('visible', '==', true),
-              limit(6) // Fetch more to allow filtering current product in frontend
-            );
-            const relatedSnap = await getDocs(relatedQ);
-            const relatedData = relatedSnap.docs
-              .map(doc => ({ id: doc.id, ...doc.data() } as Product))
-              .filter(p => p.slug !== slug && p.id !== productData?.id)
-              .slice(0, 3);
-            setRelatedProducts(relatedData);
+            try {
+              const relatedQ = query(
+                productsRef, 
+                where('category', '==', productData.category), 
+                where('visible', '==', true),
+                limit(10)
+              );
+              const relatedSnap = await getDocs(relatedQ);
+              const relatedData = relatedSnap.docs
+                .map(doc => ({ id: doc.id, ...doc.data() } as Product))
+                .filter(p => p.id !== productData?.id && p.slug !== slug)
+                .slice(0, 3);
+              setRelatedProducts(relatedData);
+            } catch (e) {
+              console.warn("Related products query failed", e);
+            }
           }
 
           // Fetch related bundles
@@ -111,14 +125,20 @@ export default function ProductDetail() {
   }
 
   if (!product) {
+    const isError = errorType === "CONNECTION_ERROR";
+    
     return (
       <div className="min-h-screen flex flex-col items-center justify-center space-y-6 px-4 bg-brand-cream">
         <div className="w-20 h-20 bg-brand-gold/10 rounded-full flex items-center justify-center text-brand-gold">
-          <ShoppingBag size={40} />
+          {isError ? <AlertTriangle size={40} /> : <ShoppingBag size={40} />}
         </div>
         <div className="text-center space-y-2">
-          <h2 className="text-3xl font-serif text-[#0E3B2E]">Product Not Found</h2>
-          <p className="text-brand-grey max-w-sm">We could not load this product right now. It might be hidden or the link is incorrect. Please contact us on WhatsApp if you need help.</p>
+          <h2 className="text-3xl font-serif text-[#0E3B2E]">{isError ? 'Connection Issue' : 'Product Not Found'}</h2>
+          <p className="text-brand-grey max-w-sm">
+            {isError 
+              ? "We could not load this product right now. Please refresh or contact us on WhatsApp."
+              : "This product might be hidden or the link is incorrect. Please contact us on WhatsApp if you need help."}
+          </p>
         </div>
         <div className="flex flex-col sm:flex-row gap-4">
           <Link to="/products" className="btn-primary flex items-center justify-center gap-2 px-8">

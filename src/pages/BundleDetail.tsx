@@ -5,7 +5,7 @@ import { db } from '../lib/firebase';
 import { Bundle, Product } from '../types';
 import { useSiteContent } from '../context/SiteContentContext';
 import { motion } from 'framer-motion';
-import { MessageCircle, ChevronLeft, Sparkles, Package, Shield, Heart, CheckCircle2, ShoppingBag, ArrowUpRight } from 'lucide-react';
+import { MessageCircle, ChevronLeft, Sparkles, Package, Shield, Heart, CheckCircle2, ShoppingBag, ArrowUpRight, AlertTriangle } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import { cn } from '../lib/utils';
 import SEO from '../components/SEO';
@@ -14,8 +14,9 @@ export default function BundleDetail() {
   const { content } = useSiteContent();
   const { slug } = useParams<{ slug: string }>();
   const [bundle, setBundle] = useState<Bundle | null>(null);
-  const [linkedProducts, setLinkedProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
+  const [errorType, setErrorType] = useState<string | null>(null);
+  const [linkedProducts, setLinkedProducts] = useState<Product[]>([]);
 
   useEffect(() => {
     async function fetchBundle() {
@@ -34,7 +35,16 @@ export default function BundleDetail() {
           where('visible', '==', true),
           limit(1)
         );
-        const querySnapshot = await getDocs(q);
+        let querySnapshot;
+        try {
+          querySnapshot = await getDocs(q);
+        } catch (err: any) {
+          if (err.message?.includes('Missing or insufficient permissions') || err.message?.includes('offline')) {
+            setErrorType("CONNECTION_ERROR");
+            return;
+          }
+          throw err;
+        }
 
         let bundleData: Bundle | null = null;
 
@@ -42,10 +52,17 @@ export default function BundleDetail() {
           bundleData = { id: querySnapshot.docs[0].id, ...querySnapshot.docs[0].data() } as Bundle;
         } else {
            // Fallback catch-all for document ID
-           const docRef = doc(db, 'bundles', slug);
-           const docSnap = await getDoc(docRef);
-           if (docSnap.exists() && docSnap.data().visible === true) {
-              bundleData = { id: docSnap.id, ...docSnap.data() } as Bundle;
+           try {
+             const docRef = doc(db, 'bundles', slug);
+             const docSnap = await getDoc(docRef);
+             if (docSnap.exists()) {
+                const data = docSnap.data();
+                if (data.visible === true || (data.visible as any) === 'true') {
+                  bundleData = { id: docSnap.id, ...data } as Bundle;
+                }
+             }
+           } catch (e) {
+             // ID lookup failed
            }
         }
 
@@ -83,15 +100,35 @@ export default function BundleDetail() {
   }
 
   if (!bundle) {
+    const isError = errorType === "CONNECTION_ERROR";
     return (
       <div className="min-h-screen flex flex-col items-center justify-center space-y-6 px-4 bg-brand-cream text-center">
-        <Package size={60} className="text-brand-gold opacity-30" />
-        <h2 className="text-3xl font-serif text-[#0E3B2E]">Bundle Not Found</h2>
-        <p className="text-brand-grey max-w-sm">This wellness combination might have been moved or is no longer available. Please check our updated catalogue.</p>
-        <Link to="/bundles" className="btn-primary flex items-center gap-2">
-          <ChevronLeft size={20} />
-          Back to Bundles
-        </Link>
+        <div className="w-20 h-20 bg-brand-gold/10 rounded-full flex items-center justify-center text-brand-gold">
+          {isError ? <AlertTriangle size={40} /> : <Package size={40} />}
+        </div>
+        <h2 className="text-3xl font-serif text-[#0E3B2E]">{isError ? 'Connection Issue' : 'Bundle Not Found'}</h2>
+        <p className="text-brand-grey max-w-sm">
+          {isError 
+            ? "We could not load this bundle right now. Please refresh or contact us on WhatsApp."
+            : "This wellness combination might have been moved or is no longer available. Please check our updated catalogue."}
+        </p>
+        <div className="flex flex-col sm:flex-row gap-4">
+          <Link to="/bundles" className="btn-primary flex items-center gap-2">
+            <ChevronLeft size={20} />
+            Back to Bundles
+          </Link>
+          {isError && (
+            <a 
+              href={`https://wa.me/${content.contact.whatsappNumber}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="btn-secondary flex items-center justify-center gap-2 px-8"
+            >
+              <MessageCircle size={20} />
+              Ask on WhatsApp
+            </a>
+          )}
+        </div>
       </div>
     );
   }

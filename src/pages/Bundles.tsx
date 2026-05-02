@@ -143,7 +143,7 @@ export default function Bundles() {
                         </div>
                         <div className="flex flex-col gap-2 w-full sm:w-auto">
                           <Link
-                            to={`/bundles/${bundle.slug}`}
+                            to={`/bundles/${bundle.slug || bundle.id}`}
                             className="bg-brand-mist/30 text-brand-emerald hover:bg-brand-mist/50 px-6 py-2 rounded-xl text-xs font-bold text-center transition-all flex items-center justify-center gap-2"
                           >
                             View Details <ChevronRight size={14} />
