@@ -248,11 +248,11 @@ export default function ProductDetail() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-20 items-start">
           {/* Images */}
           <motion.div 
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
             className="space-y-4"
           >
-            <div className="card aspect-square bg-[#FFFDF8] flex items-center justify-center relative overflow-hidden shadow-sm border border-brand-champagne/30">
+            <div className="card aspect-square bg-[#FFFDF8] flex items-center justify-center relative overflow-hidden shadow-sm border border-brand-champagne/30 hero-card contain-paint">
               {product.imageUrl ? (
                 <img 
                   src={product.imageUrl} 
@@ -421,8 +421,8 @@ export default function ProductDetail() {
 
           {/* Sidebar / Additional Info */}
           <div className="lg:col-span-4 space-y-12">
-            <div className="card p-8 bg-[#0E3B2E] text-white border-0 shadow-2xl sticky top-28 overflow-hidden">
-              <div className="absolute top-0 right-0 p-8 opacity-5">
+            <div className="card p-8 bg-[#0E3B2E] text-white border-0 shadow-2xl sticky top-28 overflow-hidden contain-paint cta-card">
+              <div className="absolute top-0 right-0 p-8 opacity-5 decorative-layer">
                 <ShoppingBag size={150} />
               </div>
               <div className="relative z-10 space-y-8">
@@ -474,8 +474,8 @@ export default function ProductDetail() {
 
       {/* Final WhatsApp CTA */}
       <section className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 text-center mt-24">
-        <div className="card p-12 lg:p-20 space-y-8 border-brand-gold/30 bg-[#FFFDF8] shadow-xl relative overflow-hidden">
-          <div className="absolute bottom-0 right-0 p-8 opacity-5">
+        <div className="card p-12 lg:p-20 space-y-8 border-brand-gold/30 bg-[#FFFDF8] shadow-xl relative overflow-hidden contain-paint cta-card">
+          <div className="absolute bottom-0 right-0 p-8 opacity-5 decorative-layer">
             <Sparkles size={200} />
           </div>
           <h2 className="text-4xl lg:text-5xl text-[#0E3B2E] font-serif">Have more questions about <span className="text-brand-gold italic">{product.name}?</span></h2>

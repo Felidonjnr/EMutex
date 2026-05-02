@@ -197,9 +197,9 @@ export default function BundleDetail() {
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-20 items-start">
           <motion.div 
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className="card aspect-[4/3] bg-white flex items-center justify-center relative overflow-hidden shadow-sm border border-brand-champagne/30"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="card aspect-[4/3] bg-white flex items-center justify-center relative overflow-hidden shadow-sm border border-brand-champagne/30 hero-card contain-paint"
           >
             {bundle.imageUrl ? (
               <img src={bundle.imageUrl} alt={bundle.name} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
@@ -355,8 +355,8 @@ export default function BundleDetail() {
                       <h3 className="text-2xl font-serif text-brand-emerald flex items-center gap-3">
                          <Info size={24} className="text-brand-gold" /> Usage Recommendation
                       </h3>
-                      <div className="p-8 bg-brand-charcoal text-white rounded-3xl shadow-xl relative overflow-hidden">
-                         <div className="absolute right-0 top-0 p-12 text-white/5">
+                      <div className="p-8 bg-brand-charcoal text-white rounded-3xl shadow-xl relative overflow-hidden contain-paint">
+                         <div className="absolute right-0 top-0 p-12 text-white/5 decorative-layer">
                             <Sparkles size={100} />
                          </div>
                          <p className="relative z-10 italic leading-relaxed text-brand-champagne/90">
@@ -391,7 +391,7 @@ export default function BundleDetail() {
           </div>
 
           <div className="lg:col-span-4 space-y-12">
-            <div className="card p-8 bg-brand-emerald text-white border-0 shadow-2xl relative overflow-hidden">
+            <div className="card p-8 bg-brand-emerald text-white border-0 shadow-2xl relative overflow-hidden contain-paint cta-card">
               <div className="relative z-10 space-y-8 text-center sm:text-left">
                 <h3 className="text-2xl text-white font-serif border-b border-white/10 pb-4">How to Order</h3>
                 <div className="space-y-4">

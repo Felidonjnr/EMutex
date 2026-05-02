@@ -97,9 +97,9 @@ export default function Home() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
             <motion.div
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.6 }}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5 }}
               className="space-y-8"
             >
               <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-brand-gold/10 text-brand-gold text-sm font-semibold uppercase tracking-wider">
@@ -132,13 +132,13 @@ export default function Home() {
             </motion.div>
 
             <motion.div
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 0.8 }}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6 }}
               className="relative lg:ml-12"
             >
-              <div className="absolute -inset-4 bg-brand-gold/5 rounded-[40px] blur-2xl -z-10" />
-              <div className="relative z-10 card p-3 bg-white border-brand-champagne/20 shadow-2xl rounded-[32px] overflow-hidden group">
+              <div className="absolute -inset-4 bg-brand-gold/5 rounded-[40px] blur-2xl -z-10 decorative-layer" />
+              <div className="relative z-10 card p-3 bg-white border-brand-champagne/20 shadow-2xl rounded-[32px] overflow-hidden group hero-card">
                 <div className="aspect-[4/5] rounded-[24px] overflow-hidden relative">
                    {content.hero.heroImageUrl ? (
                      <img 
@@ -187,8 +187,8 @@ export default function Home() {
       <section id="about" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 overflow-hidden">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
           <motion.div
-            initial={{ opacity: 0, x: -50 }}
-            whileInView={{ opacity: 1, x: 0 }}
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             className="space-y-6"
           >
@@ -205,13 +205,13 @@ export default function Home() {
             </div>
           </motion.div>
           <motion.div
-            initial={{ opacity: 0, scale: 0.9, rotate: -2 }}
-            whileInView={{ opacity: 1, scale: 1, rotate: 0 }}
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             className="relative"
           >
-            <div className="card aspect-[4/3] bg-[#0E3B2E] flex items-center justify-center text-brand-champagne p-12 overflow-hidden">
-              <div className="absolute top-0 right-0 p-8 opacity-10">
+            <div className="card aspect-[4/3] bg-[#0E3B2E] flex items-center justify-center text-brand-champagne p-12 overflow-hidden contain-paint hero-card">
+              <div className="absolute top-0 right-0 p-8 opacity-10 decorative-layer">
                 <Sparkles size={200} />
               </div>
               <div className="relative z-10 space-y-4 text-center">
@@ -331,8 +331,8 @@ export default function Home() {
 
       {/* 27. Final WhatsApp CTA */}
       <section className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-        <div className="card p-10 lg:p-16 space-y-8 bg-[#0E3B2E] text-white border-0 shadow-2xl overflow-hidden relative">
-          <div className="absolute top-0 right-0 p-8 opacity-5">
+        <div className="card p-10 lg:p-16 space-y-8 bg-[#0E3B2E] text-white border-0 shadow-2xl overflow-hidden relative contain-paint cta-card">
+          <div className="absolute top-0 right-0 p-8 opacity-5 decorative-layer">
             <MessageCircle size={300} />
           </div>
           <div className="relative z-10 space-y-8">

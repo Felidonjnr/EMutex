@@ -4,7 +4,7 @@ import { db } from '../lib/firebase';
 import { Bundle } from '../types';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Sparkles, MessageCircle, ChevronRight, Zap, Target, RefreshCcw, Heart, Loader2 } from 'lucide-react';
+import { Sparkles, MessageCircle, ChevronRight, Zap, Target, RefreshCcw, Heart, Loader2, Package } from 'lucide-react';
 import { useSiteContent } from '../context/SiteContentContext';
 import SEO from '../components/SEO';
 
@@ -83,18 +83,18 @@ export default function Bundles() {
             {bundles.map((bundle, i) => (
               <motion.div
                 key={bundle.id}
-                initial={{ opacity: 0, y: 30 }}
+                initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: i * 0.1 }}
-                className="card group overflow-hidden bg-brand-cream/30 border-brand-champagne/30"
+                viewport={{ once: true, margin: "-50px" }}
+                transition={{ duration: 0.4, ease: "easeOut" }}
+                className="card group overflow-hidden bg-brand-cream/30 border-brand-champagne/30 bundle-card"
               >
                 <div className="flex flex-col md:flex-row h-full">
                   {/* Visual Side */}
-                  <div className="md:w-1/3 bg-brand-emerald p-8 flex flex-col justify-between text-white relative overflow-hidden">
+                  <div className="md:w-1/3 bg-brand-emerald p-8 flex flex-col justify-between text-white relative overflow-hidden contain-paint">
                     {bundle.imageUrl && (
-                      <div className="absolute inset-0 opacity-20">
-                        <img src={bundle.imageUrl} alt="" className="w-full h-full object-cover grayscale brightness-50" />
+                      <div className="absolute inset-0 opacity-20 bundle-image-container">
+                        <img src={bundle.imageUrl} alt="" className="w-full h-full object-cover bundle-image" />
                       </div>
                     )}
                     <div className="relative z-10 space-y-4">
@@ -146,31 +146,31 @@ export default function Bundles() {
 
                     <div className="space-y-4">
                       <p className="text-[10px] font-bold text-brand-emerald uppercase tracking-widest border-t border-brand-champagne/20 pt-6">Pricing & Availability</p>
-                      <div className="flex flex-col sm:flex-row items-center gap-4 lg:gap-6">
+                      <div className="flex flex-col sm:flex-row items-center gap-4 lg:gap-6 mt-auto">
                         <div className="text-center sm:text-left flex-grow">
                           <p className="text-sm font-bold text-brand-emerald">
-                            {bundle.price ? `Price: ${bundle.price}` : 'Confirm Price'}
+                            {bundle.price && bundle.price !== 'Confirm on WhatsApp' ? `Price: ${bundle.price}` : 'Price: Confirm on WhatsApp'}
                           </p>
                           <p className="text-[10px] text-brand-grey">
-                            Please confirm price on WhatsApp
+                            Confirm latest details on WhatsApp
                           </p>
                         </div>
-                        <div className="flex flex-col gap-2 w-full sm:w-auto">
+                        <div className="flex flex-row items-center gap-2 w-full sm:w-auto">
                           <Link
                             to={`/bundles/${bundle.slug || bundle.id}`}
-                            className="bg-brand-mist/30 text-brand-emerald hover:bg-brand-mist/50 px-6 py-2 rounded-xl text-xs font-bold text-center transition-all flex items-center justify-center gap-2"
+                            className="bg-brand-mist/50 text-brand-emerald hover:bg-brand-mist/70 px-4 py-3 rounded-xl text-[10px] font-bold text-center transition-all flex items-center justify-center gap-1 uppercase tracking-wider flex-1 sm:flex-none"
                           >
-                            View Details <ChevronRight size={14} />
+                            Details <ChevronRight size={12} />
                           </Link>
                           <button
                             onClick={() => {
                               const message = bundle.whatsappMessage || `Hello EMutex Nig, I am interested in the ${bundle.name}. Please send me the current bundle price, products included, delivery options, and how I can order.`;
                               window.open(`https://wa.me/${content.contact.whatsappNumber}?text=${encodeURIComponent(message)}`, '_blank');
                             }}
-                            className="btn-primary w-full sm:w-auto px-6 py-2 flex items-center justify-center gap-2 shadow-lg shadow-brand-emerald/10 text-xs"
+                            className="btn-primary flex-1 sm:flex-none px-4 py-3 flex items-center justify-center gap-2 shadow-sm text-[10px] uppercase font-bold tracking-wider"
                           >
-                            <MessageCircle size={16} />
-                            Order Bundle
+                            <MessageCircle size={14} />
+                            Order
                           </button>
                         </div>
                       </div>
@@ -225,6 +225,3 @@ export default function Bundles() {
     </div>
   );
 }
-
-// Re-using Package Icon (not imported originally in Bundles.tsx)
-import { Package } from 'lucide-react';
