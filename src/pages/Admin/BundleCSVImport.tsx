@@ -1,9 +1,10 @@
 import { useState, useRef } from 'react';
 import { collection, addDoc, query, where, getDocs, updateDoc, doc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../../lib/firebase';
-import { Upload, Download, FileText, CheckCircle, AlertCircle, X, Loader2, Table, Globe, ArrowUpRight } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { Upload, Download, FileText, CheckCircle, AlertCircle, X, Loader2, Table, Globe } from 'lucide-react';
+import { motion } from 'framer-motion';
 import { cn, generateSlug } from '../../lib/utils';
+import Papa from 'papaparse';
 
 interface BundleImportPreview {
   name: string;
@@ -51,18 +52,19 @@ export default function BundleCSVImport({ onClose, onSuccess }: BundleCSVImportP
 
   const downloadTemplate = () => {
     const headers = [
-      'name', 'slug', 'category', 'shortDescription', 'fullDescription', 'imageUrl', 'galleryImages', 
+      'name', 'category', 'shortDescription', 'fullDescription', 'imageUrl', 'galleryImages', 
       'price', 'availability', 'includedProductSlugs', 'includedItems', 'benefits', 'bestFor', 
       'usageNote', 'disclaimer', 'faq', 'featured', 'showOnHomepage', 'showInBundlesPage', 
       'visible', 'bundleOrder', 'whatsappCtaText', 'whatsappMessage'
     ];
     
+    // Using a more CSV-safe example with quotes for PapaParse reliability
     const example = [
-      'Sample Wellness Bundle', 'ignore-me', 'Wellness Bundle', 'A sample bundle blurb.', 'Full description for the sample bundle.', 
-      FALLBACK_IMAGE, '', '45000', 'In Stock', 'vitality-product|cleanse-product', 'Free Shaker|Health Guide', 
-      'Better Value|Complete Routine', 'Adults seeking vitality', 'Take daily after meals.', 'Consult doctor if pregnant.', 
-      'Is it effective?::Yes very!|How to store?::Cool dry place.', 'true', 'true', 'true', 'true', '1', 
-      'Confirm Bundle Price on WhatsApp', ''
+      '"Sample Wellness Bundle"', '"Wellness Bundle"', '"A sample bundle blurb."', '"Full description for the sample bundle."', 
+      `"${FALLBACK_IMAGE}"`, '""', '"45000"', '"In Stock"', '"vitality-product|cleanse-product"', '"Free Shaker|Health Guide"', 
+      '"Better Value|Complete Routine"', '"Adults seeking vitality"', '"Take daily after meals."', '"Consult doctor if pregnant."', 
+      '"Is it effective?::Yes very!|How to store?::Cool dry place."', '"true"', '"true"', '"true"', '"true"', '"1"', 
+      '"Confirm Bundle Price on WhatsApp"', '""'
     ];
     
     const csvContent = [headers.join(','), example.join(',')].join('\n');
@@ -83,132 +85,148 @@ export default function BundleCSVImport({ onClose, onSuccess }: BundleCSVImportP
     return defaultVal;
   };
 
-  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    const reader = new FileReader();
-    reader.onload = async (event) => {
-      try {
-        const text = event.target?.result as string;
-        const lines = text.split(/\r?\n/).filter(line => line.trim());
-        if (lines.length < 2) {
-          alert("CSV file seems empty or missing data rows.");
-          return;
-        }
-
-        const headers = lines[0].toLowerCase().split(',').map(h => h.trim().replace(/^"|"$/g, ''));
-        
-        const parsedPreview: BundleImportPreview[] = [];
-        const usedSlugsInBatch = new Set<string>();
-
-        for (let i = 1; i < lines.length; i++) {
-          const currentLine = lines[i].split(',').map(v => v.trim().replace(/^"|"$/g, ''));
-          if (currentLine.length < 1) continue;
-
-          const row: any = {};
-          headers.forEach((header, index) => {
-            row[header] = currentLine[index];
-          });
-
-          // 1. Required: Name
-          const name = String(row.name || '').trim();
-          if (!name) {
-            errors.push('Bundle name is missing');
+    Papa.parse(file, {
+      header: true,
+      skipEmptyLines: true,
+      complete: async (results) => {
+        try {
+          const rows = results.data as any[];
+          if (rows.length === 0) {
+            alert("CSV file seems empty or missing data rows.");
+            return;
           }
 
-          // 2. Required: items or slugs (User logic: name + (items OR slugs))
-          const includedProductSlugs = row.includedproductslugs ? row.includedproductslugs.split('|').map((s: string) => s.trim()).filter(Boolean) : [];
-          const includedItems = row.includeditems ? row.includeditems.split('|').map((s: string) => s.trim()).filter(Boolean) : [];
-          
-          if (name && includedProductSlugs.length === 0 && includedItems.length === 0) {
-             errors.push('Bundle must have at least one manual item or one linked product slug');
-          }
+          const parsedPreview: BundleImportPreview[] = [];
+          const usedSlugsInBatch = new Set<string>();
 
-          // 3. Slug (Strictly auto-generate)
-          let slug = '';
-          if (name) {
-            const baseSlug = generateSlug(name);
-            slug = baseSlug;
-            let counter = 2;
-            while (usedSlugsInBatch.has(slug)) {
-              slug = `${baseSlug}-${counter}`;
-              counter++;
+          for (const row of rows) {
+            const errors: string[] = [];
+            const warnings: string[] = [];
+
+            // Case-insensitive header mapping
+            const getVal = (key: string) => {
+              const matchedKey = Object.keys(row).find(k => k.toLowerCase().trim() === key.toLowerCase());
+              return matchedKey ? row[matchedKey] : undefined;
+            };
+
+            // 1. Required: Name
+            const name = String(getVal('name') || '').trim();
+            if (!name) {
+              errors.push('Bundle name is missing');
             }
-            usedSlugsInBatch.add(slug);
-          }
 
-          // 4. Defaults & Normalization (User provided list)
-          const category = String(row.category || '').trim() || 'Wellness Bundle';
-          const shortDescription = String(row.shortdescription || '').trim() || 'A carefully selected wellness bundle for better living.';
-          const fullDescription = String(row.fulldescription || '').trim() || shortDescription;
-          const imageUrl = String(row.imageurl || '').trim() || FALLBACK_IMAGE;
-          const galleryImages = row.galleryimages ? row.galleryimages.split('|').map((s: string) => s.trim()).filter(Boolean) : [];
-          const price = String(row.price || '').trim() || 'Confirm on WhatsApp';
-          
-          let availability = String(row.availability || '').trim() || 'In Stock';
-          if (!['In Stock', 'Backorder', 'Out of Stock'].includes(availability)) availability = 'In Stock';
+            // 2. Required: items or slugs
+            const includedProductSlugsStr = String(getVal('includedProductSlugs') || '');
+            const includedProductSlugs = includedProductSlugsStr.split('|').map(s => s.trim()).filter(Boolean);
+            
+            const includedItemsStr = String(getVal('includedItems') || '');
+            const includedItems = includedItemsStr.split('|').map(s => s.trim()).filter(Boolean);
+            
+            if (name && includedProductSlugs.length === 0 && includedItems.length === 0) {
+               errors.push('Bundle must have at least one manual item or one linked product slug');
+            }
 
-          const benefits = row.benefits ? row.benefits.split('|').map((s: string) => s.trim()).filter(Boolean) : [];
-          const bestFor = String(row.bestfor || '').trim();
-          const usageNote = String(row.usagenote || '').trim();
-          const disclaimer = String(row.disclaimer || '').trim() || 'This product bundle is for wellness support. Please confirm current details on WhatsApp before ordering.';
+            // 3. Slug (Strictly auto-generate and unique)
+            let slug = '';
+            if (name) {
+              const baseSlug = generateSlug(name);
+              slug = baseSlug;
+              let counter = 2;
+              while (usedSlugsInBatch.has(slug)) {
+                slug = `${baseSlug}-${counter}`;
+                counter++;
+              }
+              usedSlugsInBatch.add(slug);
+            }
 
-          const faq: { question: string; answer: string }[] = [];
-          if (row.faq) {
-            const pairs = row.faq.split('|').filter(Boolean);
-            pairs.forEach((pair: string) => {
-              const [q, a] = pair.split('::');
-              if (q && a) faq.push({ question: q.trim(), answer: a.trim() });
+            // 4. Defaults & Normalization
+            const category = String(getVal('category') || '').trim() || 'Wellness Bundle';
+            const shortDescription = String(getVal('shortDescription') || '').trim() || 'A carefully selected wellness bundle for better living.';
+            const fullDescription = String(getVal('fullDescription') || '').trim() || shortDescription;
+            const imageUrl = String(getVal('imageUrl') || '').trim() || FALLBACK_IMAGE;
+            
+            const galleryImagesStr = String(getVal('galleryImages') || '');
+            const galleryImages = galleryImagesStr.split('|').map(s => s.trim()).filter(Boolean);
+            
+            const price = String(getVal('price') || '').trim() || 'Confirm on WhatsApp';
+            
+            let availability = String(getVal('availability') || '').trim() || 'In Stock';
+            if (!['In Stock', 'Backorder', 'Out of Stock'].includes(availability)) availability = 'In Stock';
+
+            const benefitsStr = String(getVal('benefits') || '');
+            const benefits = benefitsStr.split('|').map(s => s.trim()).filter(Boolean);
+            
+            const bestFor = String(getVal('bestFor') || '').trim();
+            const usageNote = String(getVal('usageNote') || '').trim();
+            const disclaimer = String(getVal('disclaimer') || '').trim() || 'This product bundle is for wellness support. Please confirm current details on WhatsApp before ordering.';
+
+            const faq: { question: string; answer: string }[] = [];
+            const faqStr = String(getVal('faq') || '');
+            if (faqStr) {
+              const pairs = faqStr.split('|').filter(Boolean);
+              pairs.forEach((pair: string) => {
+                const [q, a] = pair.split('::');
+                if (q && a) faq.push({ question: q.trim(), answer: a.trim() });
+              });
+            }
+
+            const featured = parseBoolean(getVal('featured'), false);
+            const showOnHomepage = parseBoolean(getVal('showOnHomepage'), false);
+            const showInBundlesPage = parseBoolean(getVal('showInBundlesPage'), true);
+            const visible = parseBoolean(getVal('visible'), true);
+            
+            const bundleOrderVal = getVal('bundleOrder') || getVal('order');
+            const bundleOrder = parseInt(String(bundleOrderVal)) || 999;
+
+            const whatsappCtaText = String(getVal('whatsappCtaText') || '').trim() || 'Confirm Bundle Price on WhatsApp';
+            let whatsappMessage = String(getVal('whatsappMessage') || '').trim();
+            if (!whatsappMessage && name) {
+              whatsappMessage = `Hello EMutex Nig, I am interested in the ${name}. Please send me the current bundle price, products included, delivery options, and how I can order.`;
+            }
+
+            parsedPreview.push({
+              name, slug, category, shortDescription, fullDescription, imageUrl, galleryImages,
+              price, availability, includedProductSlugs, includedItems, benefits, 
+              bestFor, usageNote, disclaimer, faq, featured, showOnHomepage, 
+              showInBundlesPage, visible, bundleOrder, whatsappCtaText, whatsappMessage,
+              status: 'pending', errors, warnings
             });
           }
 
-          const featured = parseBoolean(row.featured, false);
-          const showOnHomepage = parseBoolean(row.showonhomepage, false);
-          const showInBundlesPage = parseBoolean(row.showinbundlespage, true);
-          const visible = parseBoolean(row.visible, true);
-          const bundleOrder = parseInt(String(row.bundleorder || row.order)) || 999;
-
-          const whatsappCtaText = String(row.whatsappctatext || '').trim() || 'Confirm Bundle Price on WhatsApp';
-          let whatsappMessage = String(row.whatsappmessage || '').trim();
-          if (!whatsappMessage && name) {
-            whatsappMessage = `Hello EMutex Nig, I am interested in the ${name}. Please send me the current bundle price, products included, delivery options, and how I can order.`;
-          }
-
-          parsedPreview.push({
-            name, slug, category, shortDescription, fullDescription, imageUrl, galleryImages,
-            price, availability, includedProductSlugs, includedItems, benefits, 
-            bestFor, usageNote, disclaimer, faq, featured, showOnHomepage, 
-            showInBundlesPage, visible, bundleOrder, whatsappCtaText, whatsappMessage,
-            status: 'pending', errors, warnings
+          // Parallel resolve existing items from DB to check for updates
+          const checkExistingPromises = parsedPreview.map(async (item) => {
+            if (!item.slug || (item.errors && item.errors.length > 0)) return;
+            try {
+              const q = query(collection(db!, 'bundles'), where('slug', '==', item.slug));
+              const snap = await getDocs(q);
+              if (!snap.empty) {
+                item.existingId = snap.docs[0].id;
+                item.message = "Updates existing";
+              }
+            } catch (e) {
+              console.error("Check existing error:", e);
+            }
           });
-        }
+          await Promise.all(checkExistingPromises);
 
-      // Parallel resolve existing items
-      const checkExistingPromises = parsedPreview.map(async (item) => {
-        if (!item.slug || (item.errors && item.errors.length > 0)) return;
-        try {
-          const q = query(collection(db!, 'bundles'), where('slug', '==', item.slug));
-          const snap = await getDocs(q);
-          if (!snap.empty) {
-            item.existingId = snap.docs[0].id;
-            item.message = "Updates existing";
-          }
-        } catch (e) {
-          console.error("Check existing error:", e);
+          setPreview(parsedPreview);
+        } catch (err) {
+          console.error("CSV Processing error:", err);
+          alert("Error processing CSV data rows.");
         }
-      });
-      await Promise.all(checkExistingPromises);
+      },
+      error: (error) => {
+        console.error("PapaParse error:", error);
+        alert(`CSV parsing failed: ${error.message}`);
+      }
+    });
 
-      setPreview(parsedPreview);
-    } catch (err) {
-      console.error("CSV Parse error:", err);
-      alert("Failed to parse CSV file. Ensure it is a valid comma-separated file.");
-    }
+    if (fileInputRef.current) fileInputRef.current.value = '';
   };
-  reader.readAsText(file);
-  if (fileInputRef.current) fileInputRef.current.value = '';
-};
 
   const startImport = async () => {
     if (!db || preview.length === 0) return;
