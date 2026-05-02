@@ -83,18 +83,25 @@ export default function Bundles() {
             {bundles.map((bundle, i) => (
               <motion.div
                 key={bundle.id}
-                initial={{ opacity: 0, y: 20 }}
+                initial={{ opacity: 0, y: 10 }}
                 whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true, margin: "-50px" }}
-                transition={{ duration: 0.4, ease: "easeOut" }}
+                viewport={{ once: true, margin: "-20px" }}
+                transition={{ duration: 0.3, delay: i * 0.05 }}
                 className="card group overflow-hidden bg-brand-cream/30 border-brand-champagne/30 bundle-card"
               >
                 <div className="flex flex-col md:flex-row h-full">
                   {/* Visual Side */}
                   <div className="md:w-1/3 bg-brand-emerald p-8 flex flex-col justify-between text-white relative overflow-hidden contain-paint">
                     {bundle.imageUrl && (
-                      <div className="absolute inset-0 opacity-20 bundle-image-container">
-                        <img src={bundle.imageUrl} alt="" className="w-full h-full object-cover bundle-image" />
+                      <div className="absolute inset-0 opacity-20 image-wrapper aspect-bundle md:aspect-auto">
+                        <img 
+                          src={bundle.imageUrl} 
+                          alt="" 
+                          width="400"
+                          height="300"
+                          loading="lazy"
+                          className="w-full h-full object-cover bundle-image" 
+                        />
                       </div>
                     )}
                     <div className="relative z-10 space-y-4">
@@ -106,7 +113,7 @@ export default function Bundles() {
                         <p className="text-sm font-medium">Wellness Combo</p>
                       </div>
                     </div>
-                    <div className="relative z-10 pt-10">
+                    <div className="relative z-10 pt-10 decorative-layer">
                        <p className="text-[10px] font-bold uppercase tracking-widest text-brand-champagne/60 mb-2">Benefit Tier</p>
                        <div className="flex gap-1">
                           {[1, 2, 3, 4, 5].map(star => <div key={star} className="w-2 h-2 bg-brand-gold rounded-full" />)}
@@ -201,8 +208,8 @@ export default function Bundles() {
 
       {/* Custom Bundle Section */}
       <section className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="card p-12 lg:p-20 text-center space-y-8 bg-brand-emerald text-white overflow-hidden relative">
-           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 opacity-5 pointer-events-none">
+        <div className="card p-12 lg:p-20 text-center space-y-8 bg-brand-emerald text-white overflow-hidden relative contain-paint cta-card">
+           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 opacity-5 pointer-events-none decorative-layer">
               <Sparkles size={400} />
            </div>
            <div className="relative z-10 space-y-8">

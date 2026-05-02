@@ -19,20 +19,28 @@
 }
 
 @layer base {
-  html, body {
-    @apply overflow-x-hidden;
-  }
-  #root {
-    @apply overflow-x-hidden;
+  html {
+    scroll-behavior: smooth;
+    @apply overflow-x-hidden h-full;
   }
   body {
-    @apply font-sans bg-brand-ivory text-brand-charcoal antialiased;
+    @apply font-sans bg-brand-ivory text-brand-charcoal antialiased overflow-x-hidden min-h-full;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+  #root {
+    @apply overflow-x-hidden min-h-full;
   }
   h1, h2, h3, h4, h5, h6 {
     @apply font-serif font-bold tracking-tight text-brand-emerald;
   }
   img {
     @apply max-w-full h-auto;
+    display: block;
+  }
+  * {
+    box-sizing: border-box;
   }
 }
 
@@ -44,9 +52,19 @@
     @apply px-6 py-3 border-2 border-brand-emerald text-brand-emerald rounded-xl font-medium transition-all hover:bg-brand-mist active:scale-95 disabled:opacity-50 disabled:pointer-events-none;
   }
   .card {
-    @apply bg-brand-cream rounded-2xl shadow-sm border border-brand-champagne/30 overflow-hidden;
+    @apply bg-brand-cream rounded-2xl shadow-sm border border-brand-champagne/30 overflow-hidden flex flex-col;
     isolation: isolate;
+    contain: layout paint;
   }
+  
+  .image-wrapper {
+    @apply w-full overflow-hidden bg-brand-mist/20 relative;
+    contain: paint;
+  }
+  
+  .aspect-product { aspect-ratio: 4 / 5; }
+  .aspect-bundle { aspect-ratio: 4 / 3; }
+  .aspect-hero { aspect-ratio: 4 / 5; }
 }
 
 @media (max-width: 768px) {
@@ -58,23 +76,42 @@
   .bundle-card,
   .hero-card,
   .floating-card,
-  .cta-card {
+  .cta-card,
+  .admin-product-card,
+  .admin-bundle-card {
     transform: none !important;
     filter: none !important;
     backdrop-filter: none !important;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.05) !important;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.08) !important;
     will-change: auto !important;
+    transition: none !important;
+    animation: none !important;
+  }
+
+  .product-card::before,
+  .product-card::after,
+  .bundle-card::before,
+  .bundle-card::after {
+    display: none !important;
+    content: none !important;
   }
 
   .site-header {
-    background: #FAF7F0 !important;
+    background: #FAF7F0 !important; /* Brand Ivory Solid */
     backdrop-filter: none !important;
+    filter: none !important;
+    position: sticky;
+    top: 0;
+    z-index: 50;
   }
 
   .floating-whatsapp {
-    transform: none !important;
+    transform: translateZ(0) !important;
     will-change: auto !important;
     animation: none !important;
+    bottom: calc(24px + env(safe-area-inset-bottom)) !important;
+    contain: paint;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15) !important;
   }
 
   .animated-bg,
@@ -82,5 +119,8 @@
   .blur-layer {
     display: none !important;
   }
+  
+  h1, h2, h3 { line-height: 1.1; }
+  p { line-height: 1.6; }
 }
 

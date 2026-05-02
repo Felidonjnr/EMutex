@@ -132,19 +132,21 @@ export default function Home() {
             </motion.div>
 
             <motion.div
-              initial={{ opacity: 0, y: 20 }}
+              initial={{ opacity: 0, y: 15 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6 }}
+              transition={{ duration: 0.4 }}
               className="relative lg:ml-12"
             >
               <div className="absolute -inset-4 bg-brand-gold/5 rounded-[40px] blur-2xl -z-10 decorative-layer" />
               <div className="relative z-10 card p-3 bg-white border-brand-champagne/20 shadow-2xl rounded-[32px] overflow-hidden group hero-card">
-                <div className="aspect-[4/5] rounded-[24px] overflow-hidden relative">
+                <div className="image-wrapper aspect-hero rounded-[24px] overflow-hidden relative">
                    {content.hero.heroImageUrl ? (
                      <img 
                       src={content.hero.heroImageUrl} 
                       alt={content.hero.heroImageAlt || 'Premium Wellness Lifestyle'}
-                      className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                      width="600"
+                      height="750"
+                      className="w-full h-full object-cover transition-transform duration-700 md:group-hover:scale-105"
                       loading="eager"
                       referrerPolicy="no-referrer"
                      />

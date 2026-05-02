@@ -250,14 +250,18 @@ export default function ProductDetail() {
           <motion.div 
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4 }}
             className="space-y-4"
           >
-            <div className="card aspect-square bg-[#FFFDF8] flex items-center justify-center relative overflow-hidden shadow-sm border border-brand-champagne/30 hero-card contain-paint">
+            <div className="image-wrapper aspect-product bg-[#FFFDF8] flex items-center justify-center relative overflow-hidden shadow-sm border border-brand-champagne/30 hero-card">
               {product.imageUrl ? (
                 <img 
                   src={product.imageUrl} 
                   alt={product.name} 
+                  width="800"
+                  height="1000"
                   className="w-full h-full object-cover"
+                  loading="eager"
                   referrerPolicy="no-referrer"
                 />
               ) : (

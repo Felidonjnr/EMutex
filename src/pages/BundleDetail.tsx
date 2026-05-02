@@ -199,10 +199,18 @@ export default function BundleDetail() {
           <motion.div 
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            className="card aspect-[4/3] bg-white flex items-center justify-center relative overflow-hidden shadow-sm border border-brand-champagne/30 hero-card contain-paint"
+            transition={{ duration: 0.4 }}
+            className="image-wrapper aspect-bundle bg-white flex items-center justify-center relative overflow-hidden shadow-sm border border-brand-champagne/30 hero-card"
           >
             {bundle.imageUrl ? (
-              <img src={bundle.imageUrl} alt={bundle.name} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+              <img 
+                src={bundle.imageUrl} 
+                alt={bundle.name} 
+                width="800"
+                height="600"
+                className="w-full h-full object-cover" 
+                referrerPolicy="no-referrer" 
+              />
             ) : (
               <Package size={120} className="text-brand-gold opacity-10" />
             )}

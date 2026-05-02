@@ -19,7 +19,7 @@ export default function WhatsAppButton() {
     <motion.button
       initial={{ scale: 0, opacity: 0 }}
       animate={{ scale: 1, opacity: 1 }}
-      whileHover={{ scale: 1.1 }}
+      whileHover={{ scale: window.innerWidth > 768 ? 1.1 : 1 }}
       whileTap={{ scale: 0.9 }}
       onClick={handleWhatsAppClick}
       className="fixed bottom-6 right-6 z-40 bg-[#25D366] text-white p-4 rounded-full shadow-lg hover:shadow-xl transition-all flex items-center justify-center group floating-whatsapp"
