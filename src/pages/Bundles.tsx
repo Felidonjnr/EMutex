@@ -167,12 +167,17 @@ export default function Bundles() {
             ))}
           </div>
         ) : (
-          <div className="text-center py-20 card bg-white">
-             <Package size={60} className="mx-auto text-brand-gold opacity-20 mb-6" />
-             <h2 className="text-2xl font-serif text-[#0E3B2E]">No Bundles Available</h2>
-             <p className="text-brand-grey max-w-sm mx-auto">We are currently updating our wellness combinations. Please check back soon or contact us for custom recommendations.</p>
-             <div className="mt-8">
-                <a href={`https://wa.me/${content.contact.whatsappNumber}`} className="btn-primary inline-flex items-center gap-2 px-8">
+          <div className="text-center py-20 card bg-white space-y-8">
+             <Package size={60} className="mx-auto text-brand-gold opacity-20" />
+             <div className="space-y-4">
+                <h2 className="text-2xl font-serif text-[#0E3B2E]">No bundles are currently available</h2>
+                <p className="text-brand-grey max-w-sm mx-auto">We are currently updating our wellness combinations. Please contact us on WhatsApp for current offers and custom recommendations.</p>
+             </div>
+             <div className="mt-8 flex justify-center">
+                <a 
+                  href={`https://wa.me/${content.contact.whatsappNumber.replace(/\+/g, '')}?text=${encodeURIComponent("Hello EMutex Nig, I am interested in your current wellness bundles.")}`}
+                  className="btn-primary inline-flex items-center gap-2 px-10 py-4 shadow-lg shadow-brand-emerald/20"
+                >
                    <MessageCircle size={20} /> Talk to Specialist
                 </a>
              </div>

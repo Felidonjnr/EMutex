@@ -394,6 +394,15 @@ export default function AdminBundles() {
                       {isDeleting ? 'Deleting...' : 'Delete Forever'}
                     </button>
                   </div>
+                  <button 
+                    onClick={async () => {
+                      await toggleField(deleteConfirm, 'visible');
+                      setDeleteConfirm(null);
+                    }}
+                    className="w-full py-3 text-brand-grey text-xs font-bold uppercase tracking-widest hover:text-brand-charcoal transition-colors bg-brand-mist/20 rounded-xl"
+                  >
+                    Hide from website instead
+                  </button>
               </motion.div>
            </div>
         )}

@@ -3,7 +3,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
 import { doc, getDoc } from 'firebase/firestore';
 import { auth, db } from '../../lib/firebase';
-import { Settings, Layout, LayoutDashboard, ShoppingBag, Users, LogOut, Menu, X, Package } from 'lucide-react';
+import { Settings, Layout, LayoutDashboard, ShoppingBag, Users, LogOut, Menu, X, Package, ShieldAlert } from 'lucide-react';
 import { useSiteContent } from '../../context/SiteContentContext';
 import { cn } from '../../lib/utils';
 
@@ -14,9 +14,9 @@ const sidebarLinks = [
   { name: 'Leads', href: '/em-admin/leads', icon: Users },
   { name: 'Site Content', href: '/em-admin/site-content', icon: Layout },
   { name: 'Settings', href: '/em-admin/settings', icon: Settings },
+  { name: 'Danger Zone', href: '/em-admin/danger-zone', icon: ShieldAlert },
 ];
 
-// Admin email allowlist from environment variable
 const ADMIN_EMAILS = (import.meta.env.VITE_ADMIN_EMAILS || '')
   .split(',')
   .map((email: string) => email.trim().toLowerCase())

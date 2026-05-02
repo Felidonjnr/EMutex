@@ -147,19 +147,30 @@ export default function Products() {
         ) : (
           <div className="text-center py-24 space-y-6 bg-white/50 rounded-3xl border border-dashed border-brand-champagne/50 max-w-4xl mx-auto">
             <div className="w-20 h-20 bg-brand-mist/50 rounded-full flex items-center justify-center mx-auto text-brand-gold">
-              <Search size={40} />
+              <ShoppingBag size={40} />
             </div>
-            <div className="space-y-2">
-              <h3 className="text-2xl font-serif text-[#0E3B2E]">No products found</h3>
-              <p className="text-brand-grey">We couldn't find any products matching your search terms.</p>
+            <div className="space-y-4">
+              <h3 className="text-2xl font-serif text-[#0E3B2E]">No products are currently available</h3>
+              <p className="text-brand-grey max-w-sm mx-auto">Please contact us on WhatsApp for information about available products and current stock.</p>
             </div>
-            <button 
-              onClick={() => { setActiveCategory('all'); setSearchTerm(''); }}
-              className="px-8 py-3 bg-[#0E3B2E] text-white rounded-xl font-bold flex items-center gap-2 mx-auto hover:opacity-90 transition-all border-0"
-            >
-              <RotateCcw size={16} />
-              Reset All Filters
-            </button>
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+              <a 
+                href={`https://wa.me/${content.brand.whatsappNumber.replace(/\+/g, '')}?text=${encodeURIComponent("Hello EMutex Nig, I am looking for your current product list.")}`}
+                target="_blank"
+                className="px-8 py-3 bg-[#0E3B2E] text-white rounded-xl font-bold flex items-center gap-2 hover:opacity-90 transition-all border-0 shadow-lg shadow-brand-emerald/20"
+              >
+                Inquire on WhatsApp
+              </a>
+              {(searchTerm || activeCategory !== 'all') && (
+                <button 
+                  onClick={() => { setActiveCategory('all'); setSearchTerm(''); }}
+                  className="px-8 py-3 bg-white text-[#0E3B2E] border border-brand-champagne/30 rounded-xl font-bold flex items-center gap-2 hover:bg-brand-mist transition-all"
+                >
+                  <RotateCcw size={16} />
+                  Reset Filters
+                </button>
+              )}
+            </div>
           </div>
         )}
       </section>

@@ -75,6 +75,7 @@ const AdminBundles = lazy(() => import('./pages/Admin/Bundles'));
 const AdminLeads = lazy(() => import('./pages/Admin/Leads'));
 const AdminSettings = lazy(() => import('./pages/Admin/Settings'));
 const AdminSiteContent = lazy(() => import('./pages/Admin/SiteContent'));
+const AdminDangerZone = lazy(() => import('./pages/Admin/DangerZone'));
 
 function ScrollToTop() {
   const { pathname } = useLocation();
@@ -137,6 +138,7 @@ export default function App() {
                 <Route path="/em-admin/leads" element={<AdminLeads />} />
                 <Route path="/em-admin/settings" element={<AdminSettings />} />
                 <Route path="/em-admin/site-content" element={<AdminSiteContent />} />
+                <Route path="/em-admin/danger-zone" element={<AdminDangerZone />} />
               </Routes>
             </Suspense>
           </ErrorBoundary>
