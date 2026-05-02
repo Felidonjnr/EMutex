@@ -97,7 +97,8 @@ service cloud.firestore {
 
     // Bundles
     match /bundles/{bundleId} {
-      allow get, list: if true;
+      allow get: if true;
+      allow list: if resource.data.visible == true || isAdmin();
       allow create: if isAdmin() && isValidId(bundleId) && isValidBundle(incoming());
       allow update: if isAdmin() && isValidBundle(incoming());
       allow delete: if isAdmin();

@@ -190,26 +190,33 @@ export default function AdminBundles() {
           if (data.slug !== finalSlug) updates.slug = finalSlug;
 
           // 2. Types & Booleans
-          if (typeof data.visible !== 'boolean') updates.visible = data.visible !== false;
-          if (typeof data.featured !== 'boolean') updates.featured = !!data.featured;
-          if (typeof data.showOnHomepage !== 'boolean') updates.showOnHomepage = !!data.showOnHomepage;
-          if (typeof data.showInBundlesPage !== 'boolean') updates.showInBundlesPage = data.showInBundlesPage !== false;
+          const isVisible = typeof data.visible === 'boolean' ? data.visible : data.visible !== 'false';
+          const isFeatured = typeof data.featured === 'boolean' ? data.featured : !!data.featured;
+          const isHomepage = typeof data.showOnHomepage === 'boolean' ? data.showOnHomepage : !!data.showOnHomepage;
+          const isBundlesPage = typeof data.showInBundlesPage === 'boolean' ? data.showInBundlesPage : data.showInBundlesPage !== 'false';
+
+          if (data.visible !== isVisible) updates.visible = isVisible;
+          if (data.featured !== isFeatured) updates.featured = isFeatured;
+          if (data.showOnHomepage !== isHomepage) updates.showOnHomepage = isHomepage;
+          if (data.showInBundlesPage !== isBundlesPage) updates.showInBundlesPage = isBundlesPage;
           
-          // 3. Numbers
-          const order = parseInt(String(data.bundleOrder ?? data.order)) || 999;
-          if (data.bundleOrder !== order) updates.bundleOrder = order;
+          // 3. Numbers (Ensure both bundleOrder and order exist and are numbers)
+          const orderNum = parseInt(String(data.bundleOrder ?? data.order)) || 999;
+          if (data.bundleOrder !== orderNum) updates.bundleOrder = orderNum;
+          if (data.order !== orderNum) updates.order = orderNum;
 
           // 4. Defaults
           if (!data.category) updates.category = "Wellness Bundle";
           if (!data.shortDescription) updates.shortDescription = "A carefully selected wellness bundle for better living.";
-          if (!data.fullDescription) updates.fullDescription = data.shortDescription || "A carefully selected wellness bundle for better living.";
+          if (!data.fullDescription) updates.fullDescription = data.fullDescription || data.shortDescription || "A carefully selected wellness bundle for better living.";
           if (!data.imageUrl) updates.imageUrl = 'https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?auto=format&fit=crop&q=80&w=800';
           if (!data.price) updates.price = "Confirm on WhatsApp";
           if (!data.availability) updates.availability = "In Stock";
           if (!data.whatsappCtaText) updates.whatsappCtaText = "Confirm Bundle Price on WhatsApp";
           if (!data.disclaimer) updates.disclaimer = "This product bundle is for wellness support. Please confirm current details on WhatsApp before ordering.";
           
-          if (!Array.isArray(data.includedItems)) updates.includedItems = [];
+          if (!Array.isArray(data.includedItems)) updates.includedItems = data.includedItems ? [data.includedItems] : [];
+          if (!Array.isArray(data.includedProductSlugs)) updates.includedProductSlugs = data.includedProductSlugs ? [data.includedProductSlugs] : [];
           if (!Array.isArray(data.includedProductIds)) updates.includedProductIds = [];
           if (!Array.isArray(data.benefits)) updates.benefits = [];
           if (!Array.isArray(data.galleryImages)) updates.galleryImages = [];

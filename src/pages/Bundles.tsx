@@ -23,11 +23,25 @@ export default function Bundles() {
         setLoading(true);
         const q = query(
           collection(db, 'bundles'), 
-          where('visible', '==', true),
-          orderBy('order', 'asc')
+          where('visible', '==', true)
         );
         const snapshot = await getDocs(q);
-        const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Bundle));
+        
+        // Map and filter/sort in frontend for resilience
+        const data = snapshot.docs
+          .map(doc => ({ id: doc.id, ...doc.data() } as Bundle))
+          .filter(bundle => bundle.visible !== false)
+          .filter(bundle => bundle.showInBundlesPage !== false)
+          .sort((a, b) => {
+            const orderA = Number(a.bundleOrder ?? a.order ?? 999);
+            const orderB = Number(b.bundleOrder ?? b.order ?? 999);
+            return orderA - orderB;
+          });
+
+        if (data.length === 0 && snapshot.docs.length > 0) {
+          console.warn("No public bundles found. Check visible=true, showInBundlesPage=true, and bundleOrder/order fields on the retrieved documents.");
+        }
+
         setBundles(data);
       } catch (error) {
         console.error("Error fetching bundles:", error);
