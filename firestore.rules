@@ -65,14 +65,15 @@ service cloud.firestore {
     }
 
     function isValidBundle(data) {
-      return data.keys().hasAll(['name', 'slug', 'imageUrl', 'visible', 'order'])
-        && data.keys().size() >= 5
+      return data.keys().hasAll(['name', 'slug', 'visible', 'bundleOrder'])
+        && data.keys().size() >= 4
         && data.name is string && data.name.size() > 0 && data.name.size() <= 200
         && data.slug is string && data.slug.size() > 0 && data.slug.size() <= 200
         && (data.category == null || (data.category is string && data.category.size() <= 100))
         && (data.imageUrl == null || (data.imageUrl is string && data.imageUrl.size() <= 1000))
+        && (data.shortDescription == null || (data.shortDescription is string && data.shortDescription.size() <= 1000))
         && data.visible is bool
-        && data.order is number;
+        && data.bundleOrder is number;
     }
 
     // --- Collection Rules ---
@@ -102,8 +103,8 @@ service cloud.firestore {
     match /bundles/{bundleId} {
       allow get: if true;
       allow list: if resource.data.visible == true || isAdmin();
-      allow create: if isValidBundle(incoming()) && isAdmin() && isValidId(bundleId);
-      allow update: if isValidBundle(incoming()) && isAdmin();
+      allow create: if isAdmin() && isValidId(bundleId) && isValidBundle(incoming());
+      allow update: if isAdmin() && isValidBundle(incoming());
       allow delete: if isAdmin();
     }
 

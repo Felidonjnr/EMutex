@@ -77,8 +77,10 @@ export default function BundleCSVImport({ onClose, onSuccess }: BundleCSVImportP
 
   const parseBoolean = (val: any, defaultVal: boolean): boolean => {
     if (val === undefined || val === null || val === '') return defaultVal;
-    const s = String(val).toLowerCase();
-    return s === 'true' || s === 'yes' || s === '1' || s === 'y';
+    const s = String(val).toLowerCase().trim();
+    if (['true', 'yes', '1', 'y', 'on'].includes(s)) return true;
+    if (['false', 'no', '0', 'n', 'off'].includes(s)) return false;
+    return defaultVal;
   };
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -87,123 +89,126 @@ export default function BundleCSVImport({ onClose, onSuccess }: BundleCSVImportP
 
     const reader = new FileReader();
     reader.onload = async (event) => {
-      const text = event.target?.result as string;
-      const lines = text.split(/\r?\n/).filter(line => line.trim());
-      const headers = lines[0].toLowerCase().split(',').map(h => h.trim());
-      
-      const parsedPreview: BundleImportPreview[] = [];
-      const usedSlugsInBatch = new Set<string>();
-
-      for (let i = 1; i < lines.length; i++) {
-        // Robust CSV splitting to handle quotes if necessary, but keep it simple for now
-        const currentLine = lines[i].split(',').map(v => v.trim());
-        if (currentLine.length < 1) continue;
-
-        const row: any = {};
-        headers.forEach((header, index) => {
-          row[header] = currentLine[index];
-        });
-
-        const errors: string[] = [];
-        const warnings: string[] = [];
-
-        // 1. Required: Name
-        const name = String(row.name || '').trim();
-        if (!name) errors.push('Bundle name is required');
-
-        // 2. Required: items or slugs
-        const includedProductSlugs = row.includedproductslugs ? row.includedproductslugs.split('|').map((s: string) => s.trim()).filter(Boolean) : [];
-        const includedItems = row.includeditems ? row.includeditems.split('|').map((s: string) => s.trim()).filter(Boolean) : [];
-        
-        if (includedProductSlugs.length === 0 && includedItems.length === 0) {
-          errors.push('Bundle must have either linked products (slugs) or manual items');
+      try {
+        const text = event.target?.result as string;
+        const lines = text.split(/\r?\n/).filter(line => line.trim());
+        if (lines.length < 2) {
+          alert("CSV file seems empty or missing data rows.");
+          return;
         }
 
-        // 3. Slug generation (Rule: Strictly ignore CSV slug, generate from name)
-        let slug = '';
-        if (name) {
-          const baseSlug = generateSlug(name);
-          slug = baseSlug;
-          let counter = 2;
-          while (usedSlugsInBatch.has(slug)) {
-            slug = `${baseSlug}-${counter}`;
-            counter++;
+        const headers = lines[0].toLowerCase().split(',').map(h => h.trim().replace(/^"|"$/g, ''));
+        
+        const parsedPreview: BundleImportPreview[] = [];
+        const usedSlugsInBatch = new Set<string>();
+
+        for (let i = 1; i < lines.length; i++) {
+          const currentLine = lines[i].split(',').map(v => v.trim().replace(/^"|"$/g, ''));
+          if (currentLine.length < 1) continue;
+
+          const row: any = {};
+          headers.forEach((header, index) => {
+            row[header] = currentLine[index];
+          });
+
+          // 1. Required: Name
+          const name = String(row.name || '').trim();
+          if (!name) {
+            errors.push('Bundle name is missing');
           }
-          usedSlugsInBatch.add(slug);
-        }
 
-        // 4. Defaults & Normalization
-        let category = String(row.category || '').trim() || 'Wellness Bundle';
-        if (!row.category && name) warnings.push('Using default category: Wellness Bundle');
+          // 2. Required: items or slugs (User logic: name + (items OR slugs))
+          const includedProductSlugs = row.includedproductslugs ? row.includedproductslugs.split('|').map((s: string) => s.trim()).filter(Boolean) : [];
+          const includedItems = row.includeditems ? row.includeditems.split('|').map((s: string) => s.trim()).filter(Boolean) : [];
+          
+          if (name && includedProductSlugs.length === 0 && includedItems.length === 0) {
+             errors.push('Bundle must have at least one manual item or one linked product slug');
+          }
 
-        let shortDescription = String(row.shortdescription || '').trim() || 'A carefully selected wellness bundle for better living.';
-        if (!row.shortdescription && name) warnings.push('Using default short description');
+          // 3. Slug (Strictly auto-generate)
+          let slug = '';
+          if (name) {
+            const baseSlug = generateSlug(name);
+            slug = baseSlug;
+            let counter = 2;
+            while (usedSlugsInBatch.has(slug)) {
+              slug = `${baseSlug}-${counter}`;
+              counter++;
+            }
+            usedSlugsInBatch.add(slug);
+          }
 
-        let fullDescription = String(row.fulldescription || '').trim() || shortDescription;
-        let imageUrl = String(row.imageurl || '').trim() || FALLBACK_IMAGE;
-        if (!row.imageurl && name) warnings.push('Using fallback image');
+          // 4. Defaults & Normalization (User provided list)
+          const category = String(row.category || '').trim() || 'Wellness Bundle';
+          const shortDescription = String(row.shortdescription || '').trim() || 'A carefully selected wellness bundle for better living.';
+          const fullDescription = String(row.fulldescription || '').trim() || shortDescription;
+          const imageUrl = String(row.imageurl || '').trim() || FALLBACK_IMAGE;
+          const galleryImages = row.galleryimages ? row.galleryimages.split('|').map((s: string) => s.trim()).filter(Boolean) : [];
+          const price = String(row.price || '').trim() || 'Confirm on WhatsApp';
+          
+          let availability = String(row.availability || '').trim() || 'In Stock';
+          if (!['In Stock', 'Backorder', 'Out of Stock'].includes(availability)) availability = 'In Stock';
 
-        const galleryImages = row.galleryimages ? row.galleryimages.split('|').map((s: string) => s.trim()).filter(Boolean) : [];
-        
-        let price = String(row.price || '').trim() || 'Confirm on WhatsApp';
-        if (!row.price && name) warnings.push('Using default price: Confirm on WhatsApp');
+          const benefits = row.benefits ? row.benefits.split('|').map((s: string) => s.trim()).filter(Boolean) : [];
+          const bestFor = String(row.bestfor || '').trim();
+          const usageNote = String(row.usagenote || '').trim();
+          const disclaimer = String(row.disclaimer || '').trim() || 'This product bundle is for wellness support. Please confirm current details on WhatsApp before ordering.';
 
-        let availability = String(row.availability || '').trim() || 'In Stock';
-        if (!['In Stock', 'Backorder', 'Out of Stock'].includes(availability)) availability = 'In Stock';
+          const faq: { question: string; answer: string }[] = [];
+          if (row.faq) {
+            const pairs = row.faq.split('|').filter(Boolean);
+            pairs.forEach((pair: string) => {
+              const [q, a] = pair.split('::');
+              if (q && a) faq.push({ question: q.trim(), answer: a.trim() });
+            });
+          }
 
-        const benefits = row.benefits ? row.benefits.split('|').map((s: string) => s.trim()).filter(Boolean) : [];
-        const bestFor = String(row.bestfor || '').trim();
-        const usageNote = String(row.usagenote || '').trim();
-        const disclaimer = String(row.disclaimer || '').trim() || 'This product bundle is for wellness support. Please confirm current details on WhatsApp before ordering.';
+          const featured = parseBoolean(row.featured, false);
+          const showOnHomepage = parseBoolean(row.showonhomepage, false);
+          const showInBundlesPage = parseBoolean(row.showinbundlespage, true);
+          const visible = parseBoolean(row.visible, true);
+          const bundleOrder = parseInt(String(row.bundleorder || row.order)) || 999;
 
-        // FAQ Parsing Question::Answer|Question::Answer
-        const faq: { question: string; answer: string }[] = [];
-        if (row.faq) {
-          const pairs = row.faq.split('|').filter(Boolean);
-          pairs.forEach((pair: string) => {
-            const [q, a] = pair.split('::');
-            if (q && a) faq.push({ question: q.trim(), answer: a.trim() });
+          const whatsappCtaText = String(row.whatsappctatext || '').trim() || 'Confirm Bundle Price on WhatsApp';
+          let whatsappMessage = String(row.whatsappmessage || '').trim();
+          if (!whatsappMessage && name) {
+            whatsappMessage = `Hello EMutex Nig, I am interested in the ${name}. Please send me the current bundle price, products included, delivery options, and how I can order.`;
+          }
+
+          parsedPreview.push({
+            name, slug, category, shortDescription, fullDescription, imageUrl, galleryImages,
+            price, availability, includedProductSlugs, includedItems, benefits, 
+            bestFor, usageNote, disclaimer, faq, featured, showOnHomepage, 
+            showInBundlesPage, visible, bundleOrder, whatsappCtaText, whatsappMessage,
+            status: 'pending', errors, warnings
           });
         }
 
-        const featured = parseBoolean(row.featured, false);
-        const showOnHomepage = parseBoolean(row.showonhomepage, false);
-        const showInBundlesPage = parseBoolean(row.showinbundlespage, true);
-        const visible = parseBoolean(row.visible, true);
-        const bundleOrder = parseInt(String(row.bundleorder || row.order)) || 999;
-
-        const whatsappCtaText = String(row.whatsappctatext || '').trim() || 'Confirm Bundle Price on WhatsApp';
-        let whatsappMessage = String(row.whatsappmessage || '').trim();
-        if (!whatsappMessage && name) {
-          const itemsStr = includedItems.length > 0 ? `\nIncluded: ${includedItems.join(', ')}` : '';
-          whatsappMessage = `Hello EMutex Nig, I am interested in the ${name}.${itemsStr}\n\nPlease send me the current bundle price, delivery options, and how I can order.`;
-        }
-
-        parsedPreview.push({
-          name, slug, category, shortDescription, fullDescription, imageUrl, galleryImages,
-          price, availability, includedProductSlugs, includedItems, benefits, 
-          bestFor, usageNote, disclaimer, faq, featured, showOnHomepage, 
-          showInBundlesPage, visible, bundleOrder, whatsappCtaText, whatsappMessage,
-          status: 'pending', errors, warnings
-        });
-      }
-
-      // Check for existing slugs in DB
-      for (const item of parsedPreview) {
-        if (item.slug && (!item.errors || item.errors.length === 0)) {
+      // Parallel resolve existing items
+      const checkExistingPromises = parsedPreview.map(async (item) => {
+        if (!item.slug || (item.errors && item.errors.length > 0)) return;
+        try {
           const q = query(collection(db!, 'bundles'), where('slug', '==', item.slug));
           const snap = await getDocs(q);
           if (!snap.empty) {
             item.existingId = snap.docs[0].id;
-            item.message = "Exists (will update)";
+            item.message = "Updates existing";
           }
+        } catch (e) {
+          console.error("Check existing error:", e);
         }
-      }
+      });
+      await Promise.all(checkExistingPromises);
 
       setPreview(parsedPreview);
-    };
-    reader.readAsText(file);
+    } catch (err) {
+      console.error("CSV Parse error:", err);
+      alert("Failed to parse CSV file. Ensure it is a valid comma-separated file.");
+    }
   };
+  reader.readAsText(file);
+  if (fileInputRef.current) fileInputRef.current.value = '';
+};
 
   const startImport = async () => {
     if (!db || preview.length === 0) return;
@@ -218,16 +223,17 @@ export default function BundleCSVImport({ onClose, onSuccess }: BundleCSVImportP
       if (item.errors && item.errors.length > 0) continue;
 
       try {
-        // Resolve Slugs to IDs
+        // 1. Resolve Slugs to IDs
         const includedProductIds: string[] = [];
-        for (const slug of item.includedProductSlugs) {
-           const pQ = query(productsRef, where('slug', '==', slug));
+        for (const pSlug of item.includedProductSlugs) {
+           const pQ = query(productsRef, where('slug', '==', pSlug));
            const pSnap = await getDocs(pQ);
            if (!pSnap.empty) {
               includedProductIds.push(pSnap.docs[0].id);
            }
         }
 
+        // 2. Prepare Data
         const data = {
           name: item.name,
           slug: item.slug,
@@ -239,6 +245,7 @@ export default function BundleCSVImport({ onClose, onSuccess }: BundleCSVImportP
           price: item.price,
           availability: item.availability,
           includedProductIds,
+          includedProductSlugs: item.includedProductSlugs,
           includedItems: item.includedItems,
           benefits: item.benefits,
           bestFor: item.bestFor,
@@ -250,11 +257,13 @@ export default function BundleCSVImport({ onClose, onSuccess }: BundleCSVImportP
           showInBundlesPage: item.showInBundlesPage,
           visible: item.visible,
           bundleOrder: item.bundleOrder,
+          order: item.bundleOrder, // Backward compatibility
           whatsappCtaText: item.whatsappCtaText,
-          whatsappMessage: item.whatsappMessage,
+          whatsappMessage: item.whatsappMessage.replace('[Bundle Name]', item.name),
           updatedAt: serverTimestamp(),
         };
 
+        // 3. Save to Firestore (Collection: bundles)
         if (item.existingId) {
           await updateDoc(doc(db, 'bundles', item.existingId), data);
         } else {
@@ -266,10 +275,20 @@ export default function BundleCSVImport({ onClose, onSuccess }: BundleCSVImportP
         
         preview[i].status = 'success';
         successCount++;
-      } catch (err) {
-        console.error("Import error for:", item.name, err);
+      } catch (err: any) {
+        console.error("Firestore Import Error:", err);
+        let errorMessage = "Unknown Error";
+        if (err.message) {
+           errorMessage = err.message;
+           // Attempt to parse JSON error if it's from our handler
+           try {
+             const parsed = JSON.parse(err.message);
+             errorMessage = parsed.error || errorMessage;
+           } catch (e) {}
+        }
+        
         preview[i].status = 'error';
-        preview[i].message = String(err);
+        preview[i].message = errorMessage;
         errorCount++;
       }
       setPreview([...preview]);
@@ -376,27 +395,28 @@ export default function BundleCSVImport({ onClose, onSuccess }: BundleCSVImportP
                 <table className="w-full text-left text-xs border-collapse min-w-[1200px]">
                   <thead>
                     <tr className="bg-brand-emerald text-white uppercase text-[10px] font-bold tracking-widest">
+                      <th className="px-4 py-4 text-center">#</th>
                       <th className="px-6 py-4">Status & Validity</th>
                       <th className="px-6 py-4">Bundle Name</th>
                       <th className="px-6 py-4">Generated Slug</th>
-                      <th className="px-6 py-4">Category</th>
                       <th className="px-6 py-4">Price</th>
-                      <th className="px-6 py-4">Availability</th>
+                      <th className="px-6 py-4">In Bundles Page</th>
+                      <th className="px-6 py-4">Featured</th>
                       <th className="px-6 py-4">Contents</th>
                       <th className="px-6 py-4">Visible</th>
-                      <th className="px-6 py-4">Order</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-brand-champagne/10">
                     {preview.map((item, idx) => (
                       <tr key={idx} className={cn("hover:bg-brand-mist/5 transition-colors", item.errors?.length ? "bg-red-50/50" : "")}>
+                        <td className="px-4 py-4 text-center font-mono text-brand-grey/50 font-bold">{idx + 1}</td>
                         <td className="px-6 py-4">
                           {item.status === 'success' ? (
                             <span className="bg-emerald-100 text-emerald-700 px-3 py-1 rounded-full font-bold flex items-center gap-1 w-fit"><CheckCircle size={14}/> Saved</span>
                           ) : item.status === 'error' ? (
                             <div className="space-y-1">
                                <span className="bg-red-100 text-red-700 px-3 py-1 rounded-full font-bold flex items-center gap-1 w-fit"><AlertCircle size={14}/> Failed</span>
-                               <p className="text-[10px] text-red-400 font-mono italic max-w-[150px] truncate">{item.message}</p>
+                               <p className="text-[10px] text-red-400 font-mono italic max-w-[150px] break-words">{item.message}</p>
                             </div>
                           ) : (
                             <div className="space-y-1.5 min-w-[180px]">
@@ -432,7 +452,7 @@ export default function BundleCSVImport({ onClose, onSuccess }: BundleCSVImportP
                         <td className="px-6 py-4 align-top">
                            <div className="space-y-1 pt-1">
                               <p className="font-bold text-brand-emerald text-sm">{item.name}</p>
-                              {item.featured && <span className="bg-brand-gold text-white text-[8px] font-bold px-2 py-0.5 rounded-full uppercase tracking-widest">Featured</span>}
+                              <p className="text-[9px] text-brand-grey font-medium uppercase tracking-widest">{item.category}</p>
                            </div>
                         </td>
                         <td className="px-6 py-4 align-top">
@@ -440,15 +460,31 @@ export default function BundleCSVImport({ onClose, onSuccess }: BundleCSVImportP
                               <code className="bg-brand-mist/30 px-2 py-1 rounded font-mono text-[10px] text-brand-charcoal">{item.slug}</code>
                            </div>
                         </td>
-                        <td className="px-6 py-4 align-top font-medium text-brand-grey">{item.category}</td>
-                        <td className="px-6 py-4 align-top font-bold text-brand-charcoal">{item.price}</td>
+                        <td className="px-6 py-4 align-top font-bold text-brand-charcoal">
+                           <div className="pt-1">
+                             {item.price}
+                             <p className="text-[8px] uppercase tracking-widest font-black text-brand-grey">{item.availability}</p>
+                           </div>
+                        </td>
                         <td className="px-6 py-4 align-top">
-                           <span className={cn(
-                             "px-2 py-1 rounded-lg text-[10px] font-bold uppercase",
-                             item.availability === 'Out of Stock' ? "bg-red-50 text-red-500" : "bg-brand-mist/50 text-brand-emerald"
-                           )}>
-                             {item.availability}
-                           </span>
+                           <div className="pt-1">
+                              <span className={cn(
+                                "px-2 py-0.5 rounded-full text-[8px] font-black uppercase tracking-widest",
+                                item.showInBundlesPage ? "bg-blue-50 text-blue-600" : "bg-gray-100 text-gray-400"
+                              )}>
+                                {item.showInBundlesPage ? 'Listed' : 'Hidden'}
+                              </span>
+                           </div>
+                        </td>
+                        <td className="px-6 py-4 align-top">
+                           <div className="pt-1">
+                              <span className={cn(
+                                "px-2 py-0.5 rounded-full text-[8px] font-black uppercase tracking-widest",
+                                item.featured ? "bg-brand-gold text-white" : "bg-gray-100 text-gray-400"
+                              )}>
+                                {item.featured ? 'Featured' : 'Standard'}
+                              </span>
+                           </div>
                         </td>
                         <td className="px-6 py-4 align-top">
                            <div className="flex flex-col gap-1.5 pt-1">
@@ -472,7 +508,6 @@ export default function BundleCSVImport({ onClose, onSuccess }: BundleCSVImportP
                              item.visible ? "bg-emerald-500 shadow-lg shadow-emerald-500/20" : "bg-gray-300"
                            )} />
                         </td>
-                        <td className="px-6 py-4 align-top font-mono text-brand-grey pt-5">{item.bundleOrder}</td>
                       </tr>
                     ))}
                   </tbody>
