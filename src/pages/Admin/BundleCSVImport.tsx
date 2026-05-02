@@ -1,6 +1,7 @@
 import { useState, useRef } from 'react';
 import { collection, addDoc, query, where, getDocs, updateDoc, doc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../../lib/firebase';
+import { normalizeBundleInput } from '../../lib/bundleUtils';
 import { Upload, Download, FileText, CheckCircle, AlertCircle, X, Loader2, Table, Globe } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { cn, generateSlug } from '../../lib/utils';
@@ -107,95 +108,54 @@ export default function BundleCSVImport({ onClose, onSuccess }: BundleCSVImportP
             const errors: string[] = [];
             const warnings: string[] = [];
 
-            // Case-insensitive header mapping
+            // Case-insensitive header mapping helper for CSV rows
             const getVal = (key: string) => {
               const matchedKey = Object.keys(row).find(k => k.toLowerCase().trim() === key.toLowerCase());
               return matchedKey ? row[matchedKey] : undefined;
             };
 
-            // 1. Required: Name
-            const name = String(getVal('name') || '').trim();
-            if (!name) {
+            const rawName = String(getVal('name') || '').trim();
+            if (!rawName) {
               errors.push('Bundle name is missing');
             }
 
-            // 2. Required: items or slugs
-            const includedProductSlugsStr = String(getVal('includedProductSlugs') || '');
-            const includedProductSlugs = includedProductSlugsStr.split('|').map(s => s.trim()).filter(Boolean);
-            
-            const includedItemsStr = String(getVal('includedItems') || '');
-            const includedItems = includedItemsStr.split('|').map(s => s.trim()).filter(Boolean);
-            
-            if (name && includedProductSlugs.length === 0 && includedItems.length === 0) {
+            const bundleData = normalizeBundleInput({
+              name: rawName,
+              category: getVal('category'),
+              shortDescription: getVal('shortDescription') || getVal('shortdescription'),
+              fullDescription: getVal('fullDescription') || getVal('fulldescription'),
+              imageUrl: getVal('imageUrl') || getVal('imageurl'),
+              galleryImages: getVal('galleryImages') || getVal('galleryimages'),
+              price: getVal('price'),
+              availability: getVal('availability'),
+              includedProductSlugs: getVal('includedProductSlugs') || getVal('includedproductslugs'),
+              includedItems: getVal('includedItems') || getVal('includeditems'),
+              benefits: getVal('benefits'),
+              bestFor: getVal('bestFor') || getVal('bestfor'),
+              usageNote: getVal('usageNote') || getVal('usagenote'),
+              disclaimer: getVal('disclaimer'),
+              faq: getVal('faq'),
+              featured: getVal('featured'),
+              showOnHomepage: getVal('showOnHomepage') || getVal('showonhomepage'),
+              showInBundlesPage: getVal('showInBundlesPage') || getVal('showinbundlespage'),
+              visible: getVal('visible'),
+              bundleOrder: getVal('bundleOrder') || getVal('order'),
+              whatsappCtaText: getVal('whatsappCtaText') || getVal('whatsappctatext'),
+              whatsappMessage: getVal('whatsappMessage') || getVal('whatsappmessage'),
+            });
+
+            if (rawName && bundleData.includedProductSlugs.length === 0 && bundleData.includedItems.length === 0) {
                errors.push('Bundle must have at least one manual item or one linked product slug');
             }
 
-            // 3. Slug (Strictly auto-generate and unique)
-            let slug = '';
-            if (name) {
-              const baseSlug = generateSlug(name);
-              slug = baseSlug;
-              let counter = 2;
-              while (usedSlugsInBatch.has(slug)) {
-                slug = `${baseSlug}-${counter}`;
-                counter++;
-              }
-              usedSlugsInBatch.add(slug);
-            }
-
-            // 4. Defaults & Normalization
-            const category = String(getVal('category') || '').trim() || 'Wellness Bundle';
-            const shortDescription = String(getVal('shortDescription') || '').trim() || 'A carefully selected wellness bundle for better living.';
-            const fullDescription = String(getVal('fullDescription') || '').trim() || shortDescription;
-            const imageUrl = String(getVal('imageUrl') || '').trim() || FALLBACK_IMAGE;
-            
-            const galleryImagesStr = String(getVal('galleryImages') || '');
-            const galleryImages = galleryImagesStr.split('|').map(s => s.trim()).filter(Boolean);
-            
-            const price = String(getVal('price') || '').trim() || 'Confirm on WhatsApp';
-            
-            let availability = String(getVal('availability') || '').trim() || 'In Stock';
-            if (!['In Stock', 'Backorder', 'Out of Stock'].includes(availability)) availability = 'In Stock';
-
-            const benefitsStr = String(getVal('benefits') || '');
-            const benefits = benefitsStr.split('|').map(s => s.trim()).filter(Boolean);
-            
-            const bestFor = String(getVal('bestFor') || '').trim();
-            const usageNote = String(getVal('usageNote') || '').trim();
-            const disclaimer = String(getVal('disclaimer') || '').trim() || 'This product bundle is for wellness support. Please confirm current details on WhatsApp before ordering.';
-
-            const faq: { question: string; answer: string }[] = [];
-            const faqStr = String(getVal('faq') || '');
-            if (faqStr) {
-              const pairs = faqStr.split('|').filter(Boolean);
-              pairs.forEach((pair: string) => {
-                const [q, a] = pair.split('::');
-                if (q && a) faq.push({ question: q.trim(), answer: a.trim() });
-              });
-            }
-
-            const featured = parseBoolean(getVal('featured'), false);
-            const showOnHomepage = parseBoolean(getVal('showOnHomepage'), false);
-            const showInBundlesPage = parseBoolean(getVal('showInBundlesPage'), true);
-            const visible = parseBoolean(getVal('visible'), true);
-            
-            const bundleOrderVal = getVal('bundleOrder') || getVal('order');
-            const bundleOrder = parseInt(String(bundleOrderVal)) || 999;
-
-            const whatsappCtaText = String(getVal('whatsappCtaText') || '').trim() || 'Confirm Bundle Price on WhatsApp';
-            let whatsappMessage = String(getVal('whatsappMessage') || '').trim();
-            if (!whatsappMessage && name) {
-              whatsappMessage = `Hello EMutex Nig, I am interested in the ${name}. Please send me the current bundle price, products included, delivery options, and how I can order.`;
-            }
-
             parsedPreview.push({
-              name, slug, category, shortDescription, fullDescription, imageUrl, galleryImages,
-              price, availability, includedProductSlugs, includedItems, benefits, 
-              bestFor, usageNote, disclaimer, faq, featured, showOnHomepage, 
-              showInBundlesPage, visible, bundleOrder, whatsappCtaText, whatsappMessage,
-              status: 'pending', errors, warnings
-            });
+              ...bundleData,
+              status: 'pending',
+              errors,
+              warnings
+            } as any);
           }
+
 
           // Parallel resolve existing items from DB to check for updates
           const checkExistingPromises = parsedPreview.map(async (item) => {
@@ -241,7 +201,7 @@ export default function BundleCSVImport({ onClose, onSuccess }: BundleCSVImportP
       if (item.errors && item.errors.length > 0) continue;
 
       try {
-        // 1. Resolve Slugs to IDs
+        // 1. Resolve Product SIugs to IDs if possible
         const includedProductIds: string[] = [];
         for (const pSlug of item.includedProductSlugs) {
            const pQ = query(productsRef, where('slug', '==', pSlug));
@@ -251,37 +211,13 @@ export default function BundleCSVImport({ onClose, onSuccess }: BundleCSVImportP
            }
         }
 
-        // 2. Prepare Data
-        const data = {
-          name: item.name,
-          slug: item.slug,
-          category: item.category,
-          shortDescription: item.shortDescription,
-          fullDescription: item.fullDescription,
-          imageUrl: item.imageUrl,
-          galleryImages: item.galleryImages,
-          price: item.price,
-          availability: item.availability,
+        // 2. Normalize and prepare data
+        const data = normalizeBundleInput({
+          ...item,
           includedProductIds,
-          includedProductSlugs: item.includedProductSlugs,
-          includedItems: item.includedItems,
-          benefits: item.benefits,
-          bestFor: item.bestFor,
-          usageNote: item.usageNote,
-          disclaimer: item.disclaimer,
-          faq: item.faq,
-          featured: item.featured,
-          showOnHomepage: item.showOnHomepage,
-          showInBundlesPage: item.showInBundlesPage,
-          visible: item.visible,
-          bundleOrder: item.bundleOrder,
-          order: item.bundleOrder, // Backward compatibility
-          whatsappCtaText: item.whatsappCtaText,
-          whatsappMessage: item.whatsappMessage.replace('[Bundle Name]', item.name),
-          updatedAt: serverTimestamp(),
-        };
+        });
 
-        // 3. Save to Firestore (Collection: bundles)
+        // 3. Save to Firestore
         if (item.existingId) {
           await updateDoc(doc(db, 'bundles', item.existingId), data);
         } else {
@@ -295,22 +231,21 @@ export default function BundleCSVImport({ onClose, onSuccess }: BundleCSVImportP
         successCount++;
       } catch (err: any) {
         console.error("Firestore Import Error:", err);
-        let errorMessage = "Unknown Error";
-        if (err.message) {
-           errorMessage = err.message;
-           // Attempt to parse JSON error if it's from our handler
-           try {
-             const parsed = JSON.parse(err.message);
-             errorMessage = parsed.error || errorMessage;
-           } catch (e) {}
-        }
+        let errorMessage = err.message || String(err);
         
+        // Extract JSON error if possible
+        try {
+          const parsed = JSON.parse(errorMessage);
+          errorMessage = parsed.error || errorMessage;
+        } catch (e) {}
+
         preview[i].status = 'error';
-        preview[i].message = errorMessage;
+        preview[i].message = `Firestore save failed: ${errorMessage}`;
         errorCount++;
       }
       setPreview([...preview]);
     }
+
 
     setImportSummary({ success: successCount, errors: errorCount });
     setIsImporting(false);

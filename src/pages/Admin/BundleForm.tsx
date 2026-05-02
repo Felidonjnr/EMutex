@@ -4,6 +4,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { collection, doc, addDoc, updateDoc, serverTimestamp } from 'firebase/firestore';
 import { db, handleFirestoreError, OperationType } from '../../lib/firebase';
+import { normalizeBundleInput } from '../../lib/bundleUtils';
 import { Bundle, Product } from '../../types';
 import { X, Plus, Trash2, Save, ShoppingBag, Package, MessageCircle, Sparkles, Heart, Info } from 'lucide-react';
 import { motion } from 'framer-motion';
@@ -132,19 +133,8 @@ export default function BundleForm({ bundle, products, onClose, onSuccess }: Bun
       setIsSubmitting(true);
       setSubmitError(null);
       
-      const formData = data as BundleFormData;
-      // Force clean slug generation if missing or if user keeps it same as name but with bad chars
-      const finalSlug = generateSlug(formData.slug && formData.slug.trim() !== '' ? formData.slug : formData.name);
-      
-      // Clean up inputs
-      const payload = {
-        ...formData,
-        slug: finalSlug,
-        includedItems: formData.includedItems.filter(item => item.trim() !== ''),
-        benefits: formData.benefits.filter(item => item.trim() !== ''),
-        faq: formData.faq.filter(item => item.question.trim() !== '' && item.answer.trim() !== ''),
-        updatedAt: serverTimestamp(),
-      };
+      const payload = normalizeBundleInput(data);
+      console.log('Sending Bundle Payload:', payload);
 
       if (!db) {
         throw new Error("Database not initialized. Please check your Firebase configuration.");
@@ -161,7 +151,15 @@ export default function BundleForm({ bundle, products, onClose, onSuccess }: Bun
       onSuccess();
     } catch (error: any) {
       console.error('Bundle save error:', error);
-      setSubmitError(error.message || String(error));
+      let errorMessage = error.message || String(error);
+      
+      // Try to extract Firestore error if it's JSON from our handler
+      try {
+        const parsed = JSON.parse(errorMessage);
+        errorMessage = parsed.error || errorMessage;
+      } catch (e) {}
+
+      setSubmitError(`Bundle save failed: ${errorMessage}`);
     } finally {
       setIsSubmitting(false);
     }

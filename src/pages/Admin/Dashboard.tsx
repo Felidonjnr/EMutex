@@ -1,12 +1,12 @@
 import { useState, useEffect } from 'react';
-import { collection, query, orderBy, limit, getDocs, getCountFromServer, addDoc, serverTimestamp, doc, setDoc } from 'firebase/firestore';
+import { collection, query, orderBy, limit, getDocs, getCountFromServer, addDoc, serverTimestamp, doc, setDoc, where } from 'firebase/firestore';
 import { db, handleFirestoreError, OperationType } from '../../lib/firebase';
 import AdminLayout from '../../components/layout/AdminLayout';
 import { Lead } from '../../types';
-import { Users, ShoppingBag, Clock, ArrowUpRight, TrendingUp, Sparkles, Database, ChevronRight, Settings, Loader2 } from 'lucide-react';
+import { Users, ShoppingBag, Clock, ArrowUpRight, TrendingUp, Sparkles, Database, ChevronRight, Settings, Loader2, Package, Layers } from 'lucide-react';
 import { formatDate, cn } from '../../lib/utils';
 import { motion } from 'framer-motion';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 
 const DEMO_PRODUCTS = [
   {
@@ -227,8 +227,10 @@ const INITIAL_SETTINGS = {
 };
 
 export default function AdminDashboard() {
+  const navigate = useNavigate();
   const [stats, setStats] = useState({
     totalProducts: 0,
+    totalBundles: 0,
     totalLeads: 0,
     newLeads: 0,
   });
@@ -248,6 +250,7 @@ export default function AdminDashboard() {
       setLoading(true);
       setError(null);
       const productsCount = await getCountFromServer(collection(db, 'products'));
+      const bundlesCount = await getCountFromServer(collection(db, 'bundles'));
       const leadsCount = await getCountFromServer(collection(db, 'leads'));
       
       const recentLeadsQuery = query(collection(db, 'leads'), orderBy('createdAt', 'desc'), limit(5));
@@ -256,6 +259,7 @@ export default function AdminDashboard() {
 
       setStats({
         totalProducts: productsCount.data().count,
+        totalBundles: bundlesCount.data().count,
         totalLeads: leadsCount.data().count,
         newLeads: leadsData.filter(l => l.status === 'New').length,
       });
@@ -358,9 +362,10 @@ Summary Report:
   };
 
   const statCards = [
-    { name: 'Total Products', value: stats.totalProducts, icon: ShoppingBag, color: 'text-brand-emerald', bg: 'bg-brand-emerald/10' },
-    { name: 'Total Leads', value: stats.totalLeads, icon: Users, color: 'text-brand-gold', bg: 'bg-brand-gold/10' },
-    { name: 'New Leads', value: stats.newLeads, icon: TrendingUp, color: 'text-emerald-600', bg: 'bg-emerald-50' },
+    { name: 'Total Products', value: stats.totalProducts, icon: Package, color: 'text-brand-emerald', bg: 'bg-brand-emerald/10', path: '/em-admin/products' },
+    { name: 'Total Bundles', value: stats.totalBundles, icon: ShoppingBag, color: 'text-brand-gold', bg: 'bg-brand-gold/10', path: '/em-admin/bundles' },
+    { name: 'Total Leads', value: stats.totalLeads, icon: Users, color: 'text-blue-500', bg: 'bg-blue-50', path: '/em-admin/leads' },
+    { name: 'New Leads', value: stats.newLeads, icon: TrendingUp, color: 'text-emerald-600', bg: 'bg-emerald-50', path: '/em-admin/leads' },
   ];
 
   return (
@@ -381,14 +386,18 @@ Summary Report:
         )}
 
         {/* Stats Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           {statCards.map((stat, i) => (
             <motion.div
               key={stat.name}
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: i * 0.1 }}
-              className="card p-8 flex items-center justify-between"
+              onClick={() => stat.path && navigate(stat.path)}
+              className={cn(
+                "card p-8 flex items-center justify-between cursor-pointer group hover:border-brand-gold transition-all",
+                stat.name === 'Total Bundles' ? "bg-white" : ""
+              )}
             >
               <div className="space-y-1">
                 <p className="text-sm font-medium text-brand-grey uppercase tracking-wider">{stat.name}</p>
@@ -513,11 +522,22 @@ Summary Report:
             <div className="grid grid-cols-1 gap-4">
                <Link to="/em-admin/products" className="card p-6 flex items-center gap-4 hover:border-brand-gold transition-all group">
                   <div className="w-12 h-12 rounded-xl bg-brand-emerald text-white flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
-                    <ShoppingBag size={24} />
+                    <Package size={24} />
                   </div>
                   <div className="flex-grow">
                     <h4 className="font-bold text-brand-emerald">Manage Products</h4>
                     <p className="text-xs text-brand-grey">Update inventory & details</p>
+                  </div>
+                  <ChevronRight size={20} className="text-brand-champagne" />
+               </Link>
+
+               <Link to="/em-admin/bundles" className="card p-6 flex items-center gap-4 hover:border-brand-gold transition-all group">
+                  <div className="w-12 h-12 rounded-xl bg-brand-gold text-white flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
+                    <ShoppingBag size={24} />
+                  </div>
+                  <div className="flex-grow">
+                    <h4 className="font-bold text-brand-emerald">Manage Bundles</h4>
+                    <p className="text-xs text-brand-grey">Bundle offers & items</p>
                   </div>
                   <ChevronRight size={20} className="text-brand-champagne" />
                </Link>
