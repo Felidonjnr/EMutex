@@ -37,15 +37,24 @@ export interface Bundle {
   shortDescription: string;
   fullDescription: string;
   imageUrl: string;
+  galleryImages: string[];
   category: string;
   price: string;
   availability: 'In Stock' | 'Backorder' | 'Out of Stock';
   includedProductIds: string[];
   includedProductSlugs: string[];
   includedItems: string[];
+  benefits: string[];
+  bestFor: string;
+  usageNote: string;
+  disclaimer: string;
+  faq: { question: string; answer: string }[];
   featured: boolean;
+  showOnHomepage: boolean;
+  showInBundlesPage: boolean;
   visible: boolean;
-  order: number;
+  bundleOrder: number;
+  order: number; // Backward compatibility
   whatsappCtaText: string;
   whatsappMessage: string;
   createdAt: Timestamp;

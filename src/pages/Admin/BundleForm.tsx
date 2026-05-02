@@ -5,24 +5,37 @@ import { z } from 'zod';
 import { collection, doc, addDoc, updateDoc, serverTimestamp } from 'firebase/firestore';
 import { db, handleFirestoreError, OperationType } from '../../lib/firebase';
 import { Bundle, Product } from '../../types';
-import { X, Plus, Trash2, Save, ShoppingBag, Package, MessageCircle } from 'lucide-react';
+import { X, Plus, Trash2, Save, ShoppingBag, Package, MessageCircle, Sparkles, Heart, Info } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { cn, generateSlug } from '../../lib/utils';
 
 const bundleSchema = z.object({
   name: z.string().min(2, "Name is required"),
   slug: z.string().min(2, "Slug is required").regex(/^[a-z0-9-]+$/, "Slug must be lowercase alphanumeric with hyphens"),
+  category: z.string().default('Wellness Bundle'),
   shortDescription: z.string().min(5, "Short description is required"),
   fullDescription: z.string().min(10, "Full description is required"),
   imageUrl: z.string().url("Valid image URL is required"),
+  galleryImages: z.array(z.string()).default([]),
   price: z.string().optional().default(''),
   availability: z.enum(['In Stock', 'Backorder', 'Out of Stock']).default('In Stock'),
   includedProductIds: z.array(z.string()).default([]),
   includedProductSlugs: z.array(z.string()).default([]),
   includedItems: z.array(z.string()).default([]),
+  benefits: z.array(z.string()).default([]),
+  bestFor: z.string().default(''),
+  usageNote: z.string().default(''),
+  disclaimer: z.string().default(''),
+  faq: z.array(z.object({
+    question: z.string(),
+    answer: z.string(),
+  })).default([]),
   featured: z.boolean().default(false),
+  showOnHomepage: z.boolean().default(false),
+  showInBundlesPage: z.boolean().default(true),
   visible: z.boolean().default(true),
-  order: z.number().default(0),
+  bundleOrder: z.number().default(999),
+  whatsappCtaText: z.string().default('Confirm Bundle Price on WhatsApp'),
   whatsappMessage: z.string().default(''),
 });
 
@@ -37,30 +50,44 @@ interface BundleFormProps {
 
 export default function BundleForm({ bundle, products, onClose, onSuccess }: BundleFormProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [activeTab, setActiveTab] = useState<'basic' | 'content' | 'items' | 'whatsapp'>('basic');
+  const [activeTab, setActiveTab] = useState<'basic' | 'content' | 'items' | 'advanced' | 'whatsapp'>('basic');
   const [submitError, setSubmitError] = useState<string | null>(null);
 
   const { register, handleSubmit, control, formState: { errors }, watch, setValue } = useForm<BundleFormData>({
     resolver: zodResolver(bundleSchema) as any,
     defaultValues: bundle ? {
       ...bundle,
+      category: bundle.category || 'Wellness Bundle',
+      bundleOrder: bundle.bundleOrder ?? bundle.order ?? 999,
       includedProductIds: bundle.includedProductIds || [],
       includedProductSlugs: bundle.includedProductSlugs || [],
-      includedItems: bundle.includedItems && bundle.includedItems.length > 0 ? bundle.includedItems : ['']
+      includedItems: bundle.includedItems && bundle.includedItems.length > 0 ? bundle.includedItems : [''],
+      benefits: bundle.benefits && bundle.benefits.length > 0 ? bundle.benefits : [''],
+      faq: bundle.faq && bundle.faq.length > 0 ? bundle.faq : [{ question: '', answer: '' }]
     } as any : {
       name: '',
       slug: '',
+      category: 'Wellness Bundle',
       shortDescription: '',
       fullDescription: '',
       imageUrl: '',
+      galleryImages: [],
       price: '',
       availability: 'In Stock',
       includedProductIds: [],
       includedProductSlugs: [],
       includedItems: [''],
+      benefits: [''],
+      bestFor: '',
+      usageNote: '',
+      disclaimer: '',
+      faq: [{ question: '', answer: '' }],
       featured: false,
+      showOnHomepage: false,
+      showInBundlesPage: true,
       visible: true,
-      order: 0,
+      bundleOrder: 999,
+      whatsappCtaText: 'Confirm Bundle Price on WhatsApp',
       whatsappMessage: '',
     }
   });
@@ -68,6 +95,16 @@ export default function BundleForm({ bundle, products, onClose, onSuccess }: Bun
   const { fields: manualFields, append: appendManual, remove: removeManual } = useFieldArray({ 
     control, 
     name: 'includedItems' as never
+  });
+
+  const { fields: benefitFields, append: appendBenefit, remove: removeBenefit } = useFieldArray({ 
+    control, 
+    name: 'benefits' as never
+  });
+
+  const { fields: faqFields, append: appendFAQ, remove: removeFAQ } = useFieldArray({ 
+    control, 
+    name: 'faq' as never
   });
 
   const selectedProductIds = (watch('includedProductIds') || []) as string[];
@@ -99,11 +136,13 @@ export default function BundleForm({ bundle, products, onClose, onSuccess }: Bun
       // Force clean slug generation if missing or if user keeps it same as name but with bad chars
       const finalSlug = generateSlug(formData.slug && formData.slug.trim() !== '' ? formData.slug : formData.name);
       
-      // Clean up includedItems to remove empty strings
+      // Clean up inputs
       const payload = {
         ...formData,
         slug: finalSlug,
         includedItems: formData.includedItems.filter(item => item.trim() !== ''),
+        benefits: formData.benefits.filter(item => item.trim() !== ''),
+        faq: formData.faq.filter(item => item.question.trim() !== '' && item.answer.trim() !== ''),
         updatedAt: serverTimestamp(),
       };
 
@@ -148,13 +187,13 @@ export default function BundleForm({ bundle, products, onClose, onSuccess }: Bun
         </div>
 
         {/* Tabs */}
-        <div className="px-8 bg-white border-b border-brand-champagne/10 flex gap-8 shrink-0">
-          {(['basic', 'content', 'items', 'whatsapp'] as const).map(tab => (
+        <div className="px-8 bg-white border-b border-brand-champagne/10 flex gap-8 shrink-0 overflow-x-auto">
+          {(['basic', 'content', 'items', 'advanced', 'whatsapp'] as const).map(tab => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
               className={cn(
-                "py-4 text-xs font-bold uppercase tracking-widest border-b-2 transition-all",
+                "py-4 text-xs font-bold uppercase tracking-widest border-b-2 transition-all whitespace-nowrap",
                 activeTab === tab ? "border-brand-gold text-brand-gold" : "border-transparent text-brand-grey hover:text-brand-charcoal"
               )}
             >
@@ -197,13 +236,18 @@ export default function BundleForm({ bundle, products, onClose, onSuccess }: Bun
                         </div>
                         <div className="space-y-1">
                            <label className="text-xs font-bold text-brand-emerald">Display Order (0 is first)</label>
-                           <input type="number" {...register('order', { valueAsNumber: true })} className="w-full px-4 py-3 bg-white border border-brand-champagne/30 rounded-xl" />
+                           <input type="number" {...register('bundleOrder', { valueAsNumber: true })} className="w-full px-4 py-3 bg-white border border-brand-champagne/30 rounded-xl" />
                         </div>
                     </div>
-                    <div className="space-y-1">
-                       <label className="text-xs font-bold text-brand-emerald">Price (Optional)</label>
-                       <input {...register('price')} className="w-full px-4 py-3 bg-white border border-brand-champagne/30 rounded-xl" placeholder="e.g. 45,000" />
-                       <p className="text-[10px] text-brand-grey italic">If empty, will show "Confirm price on WhatsApp"</p>
+                    <div className="grid grid-cols-2 gap-4">
+                       <div className="space-y-1">
+                          <label className="text-xs font-bold text-brand-emerald">Category</label>
+                          <input {...register('category')} className="w-full px-4 py-3 bg-white border border-brand-champagne/30 rounded-xl" placeholder="e.g. Wellness Bundle" />
+                       </div>
+                       <div className="space-y-1">
+                          <label className="text-xs font-bold text-brand-emerald">Price (Optional)</label>
+                          <input {...register('price')} className="w-full px-4 py-3 bg-white border border-brand-champagne/30 rounded-xl" placeholder="e.g. 45,000" />
+                       </div>
                     </div>
                  </div>
               </div>
@@ -217,11 +261,19 @@ export default function BundleForm({ bundle, products, onClose, onSuccess }: Bun
                     <div className="grid grid-cols-2 gap-4 pt-4">
                        <label className="flex items-center gap-3 p-4 bg-white border border-brand-champagne/10 rounded-xl cursor-pointer">
                           <input type="checkbox" {...register('visible')} className="w-5 h-5 text-brand-emerald rounded" />
-                          <span className="text-xs font-bold text-brand-emerald">Visible</span>
+                          <span className="text-xs font-bold text-brand-emerald">Publicly Visible</span>
                        </label>
                        <label className="flex items-center gap-3 p-4 bg-white border border-brand-champagne/10 rounded-xl cursor-pointer">
                           <input type="checkbox" {...register('featured')} className="w-5 h-5 text-brand-emerald rounded" />
                           <span className="text-xs font-bold text-brand-emerald">Featured</span>
+                       </label>
+                       <label className="flex items-center gap-3 p-4 bg-white border border-brand-champagne/10 rounded-xl cursor-pointer">
+                          <input type="checkbox" {...register('showOnHomepage')} className="w-5 h-5 text-brand-emerald rounded" />
+                          <span className="text-xs font-bold text-brand-emerald">Show on Home</span>
+                       </label>
+                       <label className="flex items-center gap-3 p-4 bg-white border border-brand-champagne/10 rounded-xl cursor-pointer">
+                          <input type="checkbox" {...register('showInBundlesPage')} className="w-5 h-5 text-brand-emerald rounded" />
+                          <span className="text-xs font-bold text-brand-emerald">Show on Bundles</span>
                        </label>
                     </div>
                  </div>
@@ -306,26 +358,108 @@ export default function BundleForm({ bundle, products, onClose, onSuccess }: Bun
             </div>
           )}
 
+          {activeTab === 'advanced' && (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
+               <div className="space-y-8">
+                  <div className="space-y-6">
+                    <div className="flex items-center justify-between">
+                       <h3 className="text-lg font-serif font-bold flex items-center gap-2">
+                          <Sparkles size={20} className="text-brand-gold" /> Key Benefits
+                       </h3>
+                       <button type="button" onClick={() => appendBenefit('')} className="p-1 bg-brand-gold text-white rounded-lg"><Plus size={16}/></button>
+                    </div>
+                    <div className="space-y-3">
+                       {benefitFields.map((field, index) => (
+                          <div key={field.id} className="flex gap-2">
+                             <input 
+                                {...register(`benefits.${index}` as any)} 
+                                placeholder="e.g. Boosts Daily Energy"
+                                className="flex-grow px-4 py-3 bg-white border border-brand-champagne/30 rounded-xl text-sm" 
+                             />
+                             <button type="button" onClick={() => removeBenefit(index)} className="text-red-400 p-2"><Trash2 size={18}/></button>
+                          </div>
+                       ))}
+                    </div>
+                  </div>
+
+                  <div className="space-y-6">
+                    <h3 className="text-lg font-serif font-bold flex items-center gap-2">
+                       <Heart size={20} className="text-brand-gold" /> Targeted Towards
+                    </h3>
+                    <textarea 
+                      {...register('bestFor')} 
+                      placeholder="e.g. Busy professionals looking for natural stamina boost."
+                      className="w-full px-4 py-3 bg-white border border-brand-champagne/30 rounded-xl h-32"
+                    />
+                  </div>
+
+                  <div className="space-y-6">
+                    <h3 className="text-lg font-serif font-bold flex items-center gap-2">
+                       <Plus size={20} className="text-brand-gold" /> Usage & Disclaimer
+                    </h3>
+                    <div className="space-y-4">
+                      <div className="space-y-1">
+                        <label className="text-[10px] font-bold text-brand-grey uppercase">Usage Note</label>
+                        <textarea {...register('usageNote')} className="w-full px-4 py-3 bg-white border border-brand-champagne/30 rounded-xl h-24" />
+                      </div>
+                      <div className="space-y-1">
+                        <label className="text-[10px] font-bold text-brand-grey uppercase">Disclaimer</label>
+                        <textarea {...register('disclaimer')} className="w-full px-4 py-3 bg-white border border-brand-champagne/30 rounded-xl h-24" />
+                      </div>
+                    </div>
+                  </div>
+               </div>
+
+               <div className="space-y-6">
+                  <div className="flex items-center justify-between">
+                     <h3 className="text-lg font-serif font-bold flex items-center gap-2">
+                        FAQ Section
+                     </h3>
+                     <button type="button" onClick={() => appendFAQ({ question: '', answer: '' })} className="p-1 bg-brand-gold text-white rounded-lg"><Plus size={16}/></button>
+                  </div>
+                  <div className="space-y-4">
+                     {faqFields.map((field, index) => (
+                        <div key={field.id} className="p-4 bg-white border border-brand-champagne/20 rounded-2xl space-y-3 relative">
+                           <button type="button" onClick={() => removeFAQ(index)} className="absolute top-2 right-2 text-red-400 p-1"><X size={14}/></button>
+                           <input 
+                              {...register(`faq.${index}.question` as any)} 
+                              placeholder="Question"
+                              className="w-full px-3 py-2 bg-brand-mist/20 border border-brand-champagne/10 rounded-lg text-sm font-bold" 
+                           />
+                           <textarea 
+                              {...register(`faq.${index}.answer` as any)} 
+                              placeholder="Answer"
+                              className="w-full px-3 py-2 bg-brand-mist/10 border border-brand-champagne/10 rounded-lg text-sm h-20" 
+                           />
+                        </div>
+                     ))}
+                  </div>
+               </div>
+            </div>
+          )}
+
           {activeTab === 'whatsapp' && (
             <div className="max-w-2xl mx-auto space-y-8 py-10">
                <div className="text-center space-y-2">
                   <div className="w-16 h-16 bg-brand-gold/10 text-brand-gold rounded-full flex items-center justify-center mx-auto mb-4">
                     <MessageCircle size={32} />
                   </div>
-                  <h3 className="text-2xl font-serif">WhatsApp Message</h3>
-                  <p className="text-brand-grey">Customize the message sent when someone clicks the bundle CTA.</p>
+                  <h3 className="text-2xl font-serif">WhatsApp Customization</h3>
+                  <p className="text-brand-grey">How users contact you about this bundle.</p>
                </div>
 
-               <div className="space-y-1">
-                  <label className="text-xs font-bold text-brand-emerald">Bundle Message</label>
-                  <textarea 
-                     {...register('whatsappMessage')} 
-                     className="w-full px-4 py-3 bg-white border border-brand-champagne/30 rounded-xl h-48" 
-                     placeholder="Hello EMutex Nig, I am interested in the [Bundle Name]. Please send me current price, products included, and how I can order." 
-                  />
-                  <p className="text-[10px] text-brand-grey italic mt-2">
-                     Tip: Be clear about pricing and availability since these can change frequently.
-                  </p>
+               <div className="space-y-4">
+                  <div className="space-y-1">
+                    <label className="text-xs font-bold text-brand-emerald">CTA Button Text</label>
+                    <input {...register('whatsappCtaText')} className="w-full px-4 py-3 bg-white border border-brand-champagne/30 rounded-xl" />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-xs font-bold text-brand-emerald">Automatic Message Template</label>
+                    <textarea 
+                       {...register('whatsappMessage')} 
+                       className="w-full px-4 py-3 bg-white border border-brand-champagne/30 rounded-xl h-48" 
+                    />
+                  </div>
                </div>
             </div>
           )}

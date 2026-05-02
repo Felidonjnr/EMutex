@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { collection, getDocs, doc, deleteDoc, updateDoc, orderBy, query, where, serverTimestamp, getDoc } from 'firebase/firestore';
+import { collection, getDocs, doc, deleteDoc, updateDoc, orderBy, query, where, serverTimestamp, getDoc, writeBatch } from 'firebase/firestore';
 import { db, handleFirestoreError, OperationType, auth } from '../../lib/firebase';
 import AdminLayout from '../../components/layout/AdminLayout';
 import { Product } from '../../types';
@@ -20,7 +20,8 @@ import {
   ArrowUpRight,
   ShoppingBag,
   Wrench,
-  CheckCircle2
+  CheckCircle2,
+  Shield
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -39,6 +40,7 @@ export default function AdminProducts() {
   const [isDeleting, setIsDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const [repairing, setRepairing] = useState(false);
+  const [flushing, setFlushing] = useState(false);
 
   useEffect(() => {
     fetchProducts();
@@ -202,6 +204,35 @@ export default function AdminProducts() {
       alert("Repair failed. Please check the console for details.");
     } finally {
       setRepairing(false);
+    }
+  };
+
+  const flushProducts = async () => {
+    const confirmation = window.prompt("Type 'FLUSH' to permanently delete ALL products. This is irreversible and will break site content relying on specific products.");
+    if (confirmation !== 'FLUSH') return;
+
+    try {
+      setFlushing(true);
+      const snap = await getDocs(collection(db!, 'products'));
+      
+      const batchSize = 500;
+      let count = 0;
+
+      for (let i = 0; i < snap.docs.length; i += batchSize) {
+        const batch = writeBatch(db!);
+        const chunk = snap.docs.slice(i, i + batchSize);
+        chunk.forEach(d => batch.delete(d.ref));
+        await batch.commit();
+        count += chunk.length;
+      }
+
+      alert(`Successfully flushed ${count} products.`);
+      fetchProducts();
+    } catch (error) {
+      console.error("Flush products failed:", error);
+      alert("Flush failed. Check console.");
+    } finally {
+      setFlushing(false);
     }
   };
 
@@ -454,6 +485,31 @@ export default function AdminProducts() {
            </div>
         )}
       </AnimatePresence>
+
+      {/* Danger Zone */}
+      <div className="pt-20 border-t border-brand-champagne/20 mb-20">
+         <div className="bg-red-50/50 border border-red-100 rounded-[2.5rem] p-10 overflow-hidden relative group">
+            <div className="absolute right-0 top-0 p-12 text-red-500 opacity-5 group-hover:opacity-10 transition-opacity">
+               <AlertTriangle size={200} />
+            </div>
+            <div className="relative z-10 space-y-6">
+               <div>
+                  <h2 className="text-2xl font-serif text-red-800 flex items-center gap-3">
+                     <Shield className="text-red-600" size={28} /> Danger Zone
+                  </h2>
+                  <p className="text-red-600/70 max-w-lg mt-2 font-medium">Permanently delete all product documents. This action is irreversible.</p>
+               </div>
+               <button 
+                 onClick={flushProducts}
+                 disabled={flushing}
+                 className="btn-primary bg-red-600 hover:bg-red-700 text-white px-10 py-4 flex items-center gap-3 shadow-xl shadow-red-600/20 disabled:opacity-50"
+               >
+                  {flushing ? <Loader2 size={24} className="animate-spin" /> : <Trash2 size={24} />}
+                  <span className="text-lg">{flushing ? 'Flushing Database...' : 'Flush All Products'}</span>
+               </button>
+            </div>
+         </div>
+      </div>
     </AdminLayout>
   );
 }

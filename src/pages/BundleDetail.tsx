@@ -5,7 +5,7 @@ import { db } from '../lib/firebase';
 import { Bundle, Product } from '../types';
 import { useSiteContent } from '../context/SiteContentContext';
 import { motion } from 'framer-motion';
-import { MessageCircle, ChevronLeft, Sparkles, Package, Shield, Heart, CheckCircle2, ShoppingBag, ArrowUpRight, AlertTriangle, Loader2 } from 'lucide-react';
+import { MessageCircle, ChevronLeft, Sparkles, Package, Shield, Heart, CheckCircle2, ShoppingBag, ArrowUpRight, AlertTriangle, Loader2, Info } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import { cn, generateSlug } from '../lib/utils';
 import SEO from '../components/SEO';
@@ -254,14 +254,52 @@ export default function BundleDetail() {
                 <MessageCircle size={28} />
                 Confirm Bundle Price on WhatsApp
               </a>
+              {bundle.disclaimer && (
+                <p className="text-[10px] text-brand-grey bg-brand-mist/20 p-4 rounded-xl border border-brand-champagne/10 italic">
+                   <strong>Note:</strong> {bundle.disclaimer}
+                </p>
+              )}
             </div>
           </div>
         </div>
       </section>
 
+      {/* New Details Section */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-20">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-16">
           <div className="lg:col-span-8 space-y-16">
+            
+            {/* Benefits & Best For */}
+            {(bundle.benefits?.length > 0 || bundle.bestFor) && (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
+                {bundle.benefits?.length > 0 && (
+                  <div className="space-y-6">
+                    <h3 className="text-xl font-serif text-brand-emerald flex items-center gap-2">
+                       <Sparkles size={20} className="text-brand-gold" /> Key Benefits
+                    </h3>
+                    <ul className="space-y-3">
+                      {bundle.benefits.map((benefit, i) => (
+                        <li key={i} className="flex gap-3 text-sm text-brand-charcoal">
+                           <CheckCircle2 size={18} className="text-emerald-500 shrink-0" />
+                           {benefit}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+                {bundle.bestFor && (
+                  <div className="space-y-6">
+                    <h3 className="text-xl font-serif text-brand-emerald flex items-center gap-2">
+                       <Heart size={20} className="text-brand-gold" /> Ideal For
+                    </h3>
+                    <p className="text-sm text-brand-charcoal leading-relaxed bg-brand-mist/20 p-6 rounded-2xl border border-brand-champagne/10">
+                       {bundle.bestFor}
+                    </p>
+                  </div>
+                )}
+              </div>
+            )}
+
             <div className="space-y-8">
               <div className="flex items-center gap-3 text-[#0E3B2E] border-b border-brand-champagne/30 pb-4">
                 <Shield size={28} className="text-brand-gold" />
@@ -308,6 +346,48 @@ export default function BundleDetail() {
                 <ReactMarkdown>{bundle.fullDescription}</ReactMarkdown>
               </div>
             </div>
+
+            {/* Usage Notes & FAQ */}
+            {(bundle.usageNote || (bundle.faq && bundle.faq.length > 0)) && (
+              <div className="space-y-16">
+                 {bundle.usageNote && (
+                   <div className="space-y-6">
+                      <h3 className="text-2xl font-serif text-brand-emerald flex items-center gap-3">
+                         <Info size={24} className="text-brand-gold" /> Usage Recommendation
+                      </h3>
+                      <div className="p-8 bg-brand-charcoal text-white rounded-3xl shadow-xl relative overflow-hidden">
+                         <div className="absolute right-0 top-0 p-12 text-white/5">
+                            <Sparkles size={100} />
+                         </div>
+                         <p className="relative z-10 italic leading-relaxed text-brand-champagne/90">
+                            {bundle.usageNote}
+                         </p>
+                      </div>
+                   </div>
+                 )}
+
+                 {bundle.faq && bundle.faq.length > 0 && (
+                   <div className="space-y-8">
+                      <h3 className="text-2xl font-serif text-brand-emerald flex items-center gap-3 border-b border-brand-champagne/30 pb-4">
+                         Frequently Asked Questions
+                      </h3>
+                      <div className="space-y-4">
+                         {bundle.faq.map((item: any, i: number) => (
+                           <div key={i} className="card p-6 bg-white border-brand-champagne/10">
+                              <h4 className="font-bold text-brand-emerald mb-2 flex items-start gap-3">
+                                 <span className="w-6 h-6 bg-brand-gold/10 text-brand-gold rounded flex items-center justify-center shrink-0 text-xs">Q</span>
+                                 {item.question}
+                              </h4>
+                              <p className="text-sm text-brand-grey leading-relaxed ml-9">
+                                 {item.answer}
+                              </p>
+                           </div>
+                         ))}
+                      </div>
+                   </div>
+                 )}
+              </div>
+            )}
           </div>
 
           <div className="lg:col-span-4 space-y-12">
