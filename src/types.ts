@@ -37,6 +37,7 @@ export interface Bundle {
   shortDescription: string;
   fullDescription: string;
   imageUrl: string;
+  category: string;
   price: string;
   availability: 'In Stock' | 'Backorder' | 'Out of Stock';
   includedProductIds: string[];
@@ -45,6 +46,7 @@ export interface Bundle {
   featured: boolean;
   visible: boolean;
   order: number;
+  whatsappCtaText: string;
   whatsappMessage: string;
   createdAt: Timestamp;
   updatedAt: Timestamp;

@@ -69,7 +69,8 @@ service cloud.firestore {
         && data.keys().size() >= 5
         && data.name is string && data.name.size() > 0 && data.name.size() <= 200
         && data.slug is string && data.slug.size() > 0 && data.slug.size() <= 200
-        && data.imageUrl is string && data.imageUrl.size() <= 1000
+        && (data.category == null || (data.category is string && data.category.size() <= 100))
+        && (data.imageUrl == null || (data.imageUrl is string && data.imageUrl.size() <= 1000))
         && data.visible is bool
         && data.order is number;
     }

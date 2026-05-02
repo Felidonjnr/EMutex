@@ -8,13 +8,23 @@ import { cn } from '../../lib/utils';
 interface BundleImportPreview {
   name: string;
   slug: string;
+  category: string;
   shortDescription: string;
+  fullDescription: string;
+  imageUrl: string;
   price: string;
   availability: string;
   includedProductSlugs: string[];
   includedItems: string[];
+  featured: boolean;
+  visible: boolean;
+  order: number;
+  whatsappCtaText: string;
+  whatsappMessage: string;
   status: 'pending' | 'error' | 'success';
   message?: string;
+  errors?: string[];
+  warnings?: string[];
   existingId?: string;
 }
 
@@ -28,6 +38,14 @@ export default function BundleCSVImport({ onClose, onSuccess }: BundleCSVImportP
   const [isImporting, setIsImporting] = useState(false);
   const [importSummary, setImportSummary] = useState<{ success: number; errors: number } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const FALLBACK_IMAGE = 'https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?auto=format&fit=crop&q=80&w=800';
+
+  const generateSlug = (name: string) => {
+    return name?.toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/(^-|-$)+/g, '');
+  };
 
   const downloadTemplate = () => {
     const headers = ['name', 'slug', 'shortDescription', 'fullDescription', 'imageUrl', 'price', 'availability', 'includedProductSlugs', 'includedItems', 'featured', 'visible', 'order', 'whatsappMessage'];
@@ -56,35 +74,114 @@ export default function BundleCSVImport({ onClose, onSuccess }: BundleCSVImportP
       const parsedPreview: BundleImportPreview[] = [];
 
       for (let i = 1; i < lines.length; i++) {
-        // Simple CSV parser that handles basic commas (not robust for escaped commas)
         const currentLine = lines[i].split(',').map(v => v.trim());
-        if (currentLine.length < 2) continue;
+        if (currentLine.length < 1) continue;
 
-        const bundle: any = {};
+        const row: any = {};
         headers.forEach((header, index) => {
-          bundle[header] = currentLine[index];
+          row[header] = currentLine[index];
         });
 
-        // Special handling for array fields
-        const includedProductSlugs = bundle.includedproductslugs ? bundle.includedproductslugs.split('|').filter(Boolean) : [];
-        const includedItems = bundle.includeditems ? bundle.includeditems.split('|').filter(Boolean) : [];
+        const errors: string[] = [];
+        const warnings: string[] = [];
+
+        // 1. Required: Name
+        const name = String(row.name || '').trim();
+        if (!name) errors.push('Name is required');
+
+        // 2. Required: items or slugs
+        const includedProductSlugs = row.includedproductslugs ? row.includedproductslugs.split('|').map((s: string) => s.trim()).filter(Boolean) : [];
+        const includedItems = row.includeditems ? row.includeditems.split('|').map((s: string) => s.trim()).filter(Boolean) : [];
+        
+        if (includedProductSlugs.length === 0 && includedItems.length === 0) {
+          errors.push('Bundle must have either linked products (slugs) or manual items');
+        }
+
+        // 3. Defaults: Slug
+        let slug = String(row.slug || '').trim();
+        if (!slug && name) {
+          slug = generateSlug(name);
+        }
+
+        // 4. Defaults: Category
+        let category = String(row.category || '').trim();
+        if (!category) {
+          category = 'Wellness Bundle';
+          if (name) warnings.push('No category provided. Category set to Wellness Bundle.');
+        }
+
+        // 5. Defaults: Descriptions
+        let shortDescription = String(row.shortdescription || '').trim();
+        if (!shortDescription) {
+          shortDescription = 'A carefully selected wellness bundle for better living.';
+          if (name) warnings.push('No short description provided. Using default.');
+        }
+
+        let fullDescription = String(row.fulldescription || '').trim();
+        if (!fullDescription) {
+          fullDescription = shortDescription;
+        }
+
+        // 6. Defaults: Image
+        let imageUrl = String(row.imageurl || '').trim();
+        if (!imageUrl) {
+          imageUrl = FALLBACK_IMAGE;
+          if (name) warnings.push('No image provided. Fallback image will be used.');
+        }
+
+        // 7. Defaults: Price & Availability
+        let price = String(row.price || '').trim();
+        if (!price) {
+          price = 'Confirm on WhatsApp';
+          if (name) warnings.push('No price provided. Price set to Confirm on WhatsApp.');
+        }
+
+        let availability = String(row.availability || '').trim();
+        if (!availability || !['In Stock', 'Backorder', 'Out of Stock'].includes(availability)) {
+          availability = 'In Stock';
+        }
+
+        // 8. Toggles
+        const featured = row.featured?.toLowerCase() === 'true';
+        const visible = row.visible === undefined || row.visible === '' || row.visible?.toLowerCase() === 'true';
+        const order = parseInt(row.order) || 999;
+
+        // 9. WhatsApp
+        let whatsappCtaText = String(row.whatsappctatext || '').trim();
+        if (!whatsappCtaText) {
+          whatsappCtaText = 'Confirm Bundle Price on WhatsApp';
+        }
+
+        let whatsappMessage = String(row.whatsappmessage || '').trim();
+        if (!whatsappMessage && name) {
+          whatsappMessage = `Hello EMutex Nig, I am interested in the ${name}. Please send me the current bundle price, products included, delivery options, and how I can order.`;
+        }
 
         parsedPreview.push({
-          name: bundle.name || '',
-          slug: bundle.slug || '',
-          shortDescription: bundle.shortdescription || '',
-          price: bundle.price || '',
-          availability: bundle.availability || 'In Stock',
+          name,
+          slug,
+          category,
+          shortDescription,
+          fullDescription,
+          imageUrl,
+          price,
+          availability,
           includedProductSlugs,
           includedItems,
-          status: 'pending'
+          featured,
+          visible,
+          order,
+          whatsappCtaText,
+          whatsappMessage,
+          status: 'pending',
+          errors,
+          warnings
         });
       }
 
       // Check for existing slugs
-      const checkedPreview = [...parsedPreview];
-      for (const item of checkedPreview) {
-        if (item.slug) {
+      for (const item of parsedPreview) {
+        if (item.slug && (!item.errors || item.errors.length === 0)) {
           const q = query(collection(db!, 'bundles'), where('slug', '==', item.slug));
           const snap = await getDocs(q);
           if (!snap.empty) {
@@ -94,13 +191,16 @@ export default function BundleCSVImport({ onClose, onSuccess }: BundleCSVImportP
         }
       }
 
-      setPreview(checkedPreview);
+      setPreview(parsedPreview);
     };
     reader.readAsText(file);
   };
 
   const startImport = async () => {
     if (!db || preview.length === 0) return;
+    const validData = preview.filter(p => !p.errors || p.errors.length === 0);
+    if (validData.length === 0) return;
+
     setIsImporting(true);
     let successCount = 0;
     let errorCount = 0;
@@ -109,6 +209,8 @@ export default function BundleCSVImport({ onClose, onSuccess }: BundleCSVImportP
 
     for (let i = 0; i < preview.length; i++) {
       const item = preview[i];
+      if (item.errors && item.errors.length > 0) continue;
+
       try {
         // Resolve Slugs to IDs
         const includedProductIds: string[] = [];
@@ -128,6 +230,8 @@ export default function BundleCSVImport({ onClose, onSuccess }: BundleCSVImportP
         delete (data as any).status;
         delete (data as any).message;
         delete (data as any).existingId;
+        delete (data as any).errors;
+        delete (data as any).warnings;
 
         if (item.existingId) {
           await updateDoc(doc(db, 'bundles', item.existingId), data);
@@ -221,13 +325,13 @@ export default function BundleCSVImport({ onClose, onSuccess }: BundleCSVImportP
 
               <div className="p-6 bg-brand-mist/20 rounded-2xl border border-brand-champagne/10">
                  <h4 className="flex items-center gap-2 text-xs font-bold text-brand-gold uppercase tracking-widest mb-3">
-                    <AlertCircle size={14} /> Notes for Data Entry:
+                    <AlertCircle size={14} /> Notes for Bundle Entry:
                  </h4>
                  <ul className="text-xs text-brand-grey space-y-2 list-disc ml-4">
-                    <li>Use <strong>slugs</strong> for linked products (e.g., <code>vitality-plus|wellness-tea</code>). Separated by <code>|</code> pipe.</li>
+                    <li><strong>Required:</strong> Name AND (Product Slugs OR Manual Items).</li>
+                    <li>Use <code>slugs</code> for linked products (e.g., <code>vitality-plus|wellness-tea</code>).</li>
                     <li>Manual items should also be separated by a <code>|</code> pipe character.</li>
-                    <li>Price should be numbers only for calculations, or strings if you want text.</li>
-                    <li>If a slug already exists, the bundle's data will be <strong>updated</strong>.</li>
+                    <li>Images, Descriptions, and Prices are optional (defaults will be used).</li>
                  </ul>
               </div>
             </div>
@@ -241,37 +345,61 @@ export default function BundleCSVImport({ onClose, onSuccess }: BundleCSVImportP
                     <button onClick={() => setPreview([])} className="text-xs font-bold text-red-500 hover:underline">Clear</button>
                  </div>
               </div>
-              <div className="border border-brand-champagne/20 rounded-2xl overflow-hidden bg-white shadow-sm">
-                <table className="w-full text-left text-sm border-collapse">
+              <div className="border border-brand-champagne/20 rounded-2xl overflow-hidden bg-white shadow-sm overflow-x-auto">
+                <table className="w-full text-left text-xs border-collapse min-w-[700px]">
                   <thead>
-                    <tr className="bg-brand-mist/30 text-brand-emerald uppercase text-[10px] font-bold tracking-widest">
+                    <tr className="bg-brand-mist/30 text-brand-emerald uppercase text-[9px] font-bold tracking-widest">
                       <th className="px-4 py-3">Status</th>
                       <th className="px-4 py-3">Bundle Name</th>
                       <th className="px-4 py-3">Slug</th>
-                      <th className="px-4 py-3">Linked Prods</th>
+                      <th className="px-4 py-3">Includes</th>
                       <th className="px-4 py-3">Price</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-brand-champagne/10">
                     {preview.map((item, idx) => (
-                      <tr key={idx} className="hover:bg-brand-mist/5 transition-colors">
-                        <td className="px-4 py-3 whitespace-nowrap">
-                          {item.status === 'success' ? <CheckCircle className="text-emerald-500" size={18}/> : 
-                           item.status === 'error' ? <AlertCircle className="text-red-500" size={18}/> :
-                           <div className="flex items-center gap-1.5 text-[10px] text-brand-gold font-bold">
-                              {item.existingId ? <RefreshCcw size={12} /> : <Plus size={12} />}
-                              {item.message || 'Ready'}
-                           </div>
-                          }
+                      <tr key={idx} className={cn("hover:bg-brand-mist/5 transition-colors", item.errors?.length ? "bg-red-50/50" : "")}>
+                        <td className="px-4 py-3">
+                          {item.status === 'success' ? (
+                            <span className="text-emerald-500 font-bold flex items-center gap-1"><CheckCircle size={14}/> Success</span>
+                          ) : item.status === 'error' ? (
+                            <div className="space-y-1">
+                               <span className="text-red-500 font-bold flex items-center gap-1"><AlertCircle size={14}/> Error</span>
+                               <p className="text-[10px] text-red-400">{item.message}</p>
+                            </div>
+                          ) : (
+                            <div className="space-y-1">
+                               {item.errors?.length ? (
+                                  <div className="space-y-1">
+                                     <span className="text-red-500 font-bold flex items-center gap-1 text-[10px] uppercase">Blocked</span>
+                                     {item.errors.map((err, i) => <p key={i} className="text-[9px] text-red-400 italic">• {err}</p>)}
+                                  </div>
+                               ) : (
+                                  <div className="space-y-1">
+                                     <span className="text-emerald-500 font-bold flex items-center gap-1 text-[10px] uppercase">
+                                        {item.existingId ? 'Update' : 'New Bundle'}
+                                     </span>
+                                     {item.warnings?.map((warn, i) => (
+                                        <p key={i} className="text-[9px] text-amber-600 italic leading-tight">• {warn}</p>
+                                     ))}
+                                  </div>
+                               )}
+                            </div>
+                          )}
                         </td>
                         <td className="px-4 py-3 font-medium text-brand-emerald">{item.name}</td>
                         <td className="px-4 py-3 font-mono text-[10px] text-brand-grey">{item.slug}</td>
                         <td className="px-4 py-3">
-                           <span className="px-1.5 py-0.5 bg-brand-gold/10 text-brand-gold rounded text-[10px] font-bold">
-                             {item.includedProductSlugs.length} Prods
-                           </span>
+                           <div className="flex flex-col gap-1">
+                             <span className="px-1.5 py-0.5 bg-brand-mist rounded text-[9px] font-bold text-brand-gold whitespace-nowrap">
+                               {item.includedProductSlugs.length} Linked Slugs
+                             </span>
+                             <span className="px-1.5 py-0.5 bg-brand-champagne/10 rounded text-[9px] font-bold text-brand-grey whitespace-nowrap">
+                               {item.includedItems.length} Manual Items
+                             </span>
+                           </div>
                         </td>
-                        <td className="px-4 py-3 text-xs font-bold">{item.price}</td>
+                        <td className="px-4 py-3 text-[10px] font-bold text-brand-charcoal">{item.price}</td>
                       </tr>
                     ))}
                   </tbody>

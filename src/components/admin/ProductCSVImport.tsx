@@ -36,6 +36,7 @@ interface ProductRow {
   relatedBundleIds: string | string[];
   isValid?: boolean;
   errors?: string[];
+  warnings?: string[];
 }
 
 export default function ProductCSVImport({ onClose, onSuccess }: CSVImportProps) {
@@ -46,6 +47,14 @@ export default function ProductCSVImport({ onClose, onSuccess }: CSVImportProps)
   const [error, setError] = useState<string | null>(null);
   const [report, setReport] = useState<{ success: number; failed: number; skipped: number } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const FALLBACK_IMAGE = 'https://images.unsplash.com/photo-1512069772995-ec65ed45afd6?auto=format&fit=crop&q=80&w=800';
+
+  const generateSlug = (name: string) => {
+    return name?.toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/(^-|-$)+/g, '');
+  };
 
   const getTemplateData = () => {
     const headers = [
@@ -62,7 +71,7 @@ export default function ProductCSVImport({ onClose, onSuccess }: CSVImportProps)
         category: 'Supplements',
         shortDescription: 'Great for daily vitality.',
         fullDescription: '# Premium Support\n- High quality\n- Daily use',
-        imageUrl: 'https://images.unsplash.com/photo...',
+        imageUrl: '',
         galleryImages: 'https://img1.com|https://img2.com',
         price: '₦15,000',
         availability: 'In Stock',
@@ -71,15 +80,15 @@ export default function ProductCSVImport({ onClose, onSuccess }: CSVImportProps)
         bestFor: 'Busy professionals',
         usageNote: 'Take 1 daily',
         disclaimer: 'Consult a doctor.',
-        faq: 'How do I use?::Take with water|What time?::Morning preferred',
-        featured: 'TRUE',
-        showOnHomepage: 'TRUE',
+        faq: 'How do I order?::Click WhatsApp to confirm price and delivery|Is delivery available?::Yes, confirm delivery options on WhatsApp.',
+        featured: 'FALSE',
+        showOnHomepage: 'FALSE',
         showInCatalogue: 'TRUE',
         visible: 'TRUE',
-        productOrder: '1',
-        whatsappCtaText: 'Confirm Price on WhatsApp',
-        whatsappMessage: 'Hello, I want to order Example Wellness Pack.',
-        relatedBundleIds: 'curated-pack-1|weekly-support-id'
+        productOrder: '999',
+        whatsappCtaText: 'Confirm Latest Price on WhatsApp',
+        whatsappMessage: '',
+        relatedBundleIds: ''
       }
     ];
 
@@ -95,13 +104,13 @@ export default function ProductCSVImport({ onClose, onSuccess }: CSVImportProps)
     const instructions = [
       ['Column', 'Required', 'Format / Notes'],
       ['name', 'Yes', 'The display name of the product'],
-      ['slug', 'Yes', 'URL-friendly name (e.g. skin-care-oil)'],
-      ['category', 'Yes', 'e.g. Supplements, Oils, Bundles'],
-      ['shortDescription', 'Yes', 'Brief summary for cards'],
-      ['fullDescription', 'Yes', 'Rich text details (Markdown supported)'],
-      ['imageUrl', 'Yes', 'Main image URL (Use Cloudinary link)'],
+      ['slug', 'No', 'Auto-generated from name if empty'],
+      ['category', 'No', 'Default: General Wellness'],
+      ['shortDescription', 'No', 'Brief summary for cards'],
+      ['fullDescription', 'No', 'Rich text details (Markdown supported)'],
+      ['imageUrl', 'No', 'Fallback image used if empty'],
       ['galleryImages', 'No', 'Multiple URLs separated by | symbol'],
-      ['availability', 'Yes', 'Must be: In Stock, Backorder, or Out of Stock'],
+      ['availability', 'No', 'Must be: In Stock, Backorder, or Out of Stock'],
       ['wellnessSupportPoints', 'No', 'Multiple points separated by | symbol'],
       ['benefits', 'No', 'Multiple benefits separated by | symbol'],
       ['faq', 'No', 'Format: Question::Answer|Question::Answer'],
@@ -135,7 +144,6 @@ export default function ProductCSVImport({ onClose, onSuccess }: CSVImportProps)
   };
 
   const openGoogleSheetsTemplate = () => {
-    // This is a placeholder link - user should ideally provide their own template link
     window.open('https://docs.google.com/spreadsheets/d/1_S0uByPzS9wM9ZlTjHBeG-sWbXwW-84rN8_Z6G2z7J4/copy', '_blank');
   };
 
@@ -159,49 +167,101 @@ export default function ProductCSVImport({ onClose, onSuccess }: CSVImportProps)
       
       const processedData = rawData.map((row: any) => {
         const errors: string[] = [];
+        const warnings: string[] = [];
+
+        // 1. Name is strictly required
+        const name = String(row.name || '').trim();
+        if (!name) errors.push('Name is required');
+
+        // 2. Slug defaults
+        let slug = String(row.slug || '').trim();
+        if (!slug && name) {
+          slug = generateSlug(name);
+        }
+
+        // 3. Category defaults
+        let category = String(row.category || '').trim();
+        if (!category) {
+          category = 'General Wellness';
+          if (name) warnings.push('No category provided. Category set to General Wellness.');
+        }
+
+        // 4. Description defaults
+        let shortDescription = String(row.shortDescription || '').trim();
+        if (!shortDescription) {
+          shortDescription = 'Carefully selected wellness product for daily support and better living.';
+          if (name) warnings.push('No short description provided. Using default.');
+        }
+
+        let fullDescription = String(row.fullDescription || '').trim();
+        if (!fullDescription) {
+          fullDescription = shortDescription;
+        }
+
+        // 5. Image defaults
+        let imageUrl = String(row.imageUrl || '').trim();
+        if (!imageUrl) {
+          imageUrl = FALLBACK_IMAGE;
+          if (name) warnings.push('No image URL provided. A fallback image will be used.');
+        }
+
+        // 6. Price & Availability
+        let price = String(row.price || '').trim();
+        if (!price) {
+          price = 'Confirm on WhatsApp';
+          if (name) warnings.push('No price provided. Price set to Confirm on WhatsApp.');
+        }
+
+        let availability = String(row.availability || '').trim();
+        if (!availability || !['In Stock', 'Backorder', 'Out of Stock'].includes(availability)) {
+          availability = 'In Stock';
+        }
+
+        // 7. Toggles
+        const featured = parseBoolean(row.featured, false);
+        const showOnHomepage = parseBoolean(row.showOnHomepage, false);
+        const showInCatalogue = parseBoolean(row.showInCatalogue, true);
+        const visible = parseBoolean(row.visible, true);
+        const productOrder = parseInt(String(row.productOrder)) || 999;
+
+        // 8. WhatsApp
+        let whatsappCtaText = String(row.whatsappCtaText || '').trim();
+        if (!whatsappCtaText) {
+          whatsappCtaText = 'Confirm Latest Price on WhatsApp';
+        }
+
+        let whatsappMessage = String(row.whatsappMessage || '').trim();
+        if (!whatsappMessage && name) {
+          whatsappMessage = `Hello EMutex Nig, I am interested in ${name}. Please send me the current price, product details, delivery options, and how I can order.`;
+        }
+
         const obj: ProductRow = {
-          name: String(row.name || '').trim(),
-          slug: String(row.slug || '').trim(),
-          category: String(row.category || '').trim(),
-          shortDescription: String(row.shortDescription || '').trim(),
-          fullDescription: String(row.fullDescription || '').trim(),
-          imageUrl: String(row.imageUrl || '').trim(),
+          name,
+          slug,
+          category,
+          shortDescription,
+          fullDescription,
+          imageUrl,
           galleryImages: parseMultiple(row.galleryImages),
-          price: String(row.price || 'Confirm on WhatsApp').trim(),
-          availability: String(row.availability || 'In Stock').trim(),
+          price,
+          availability,
           wellnessSupportPoints: parseMultiple(row.wellnessSupportPoints),
           benefits: parseMultiple(row.benefits),
           bestFor: String(row.bestFor || '').trim(),
           usageNote: String(row.usageNote || '').trim(),
           disclaimer: String(row.disclaimer || '').trim(),
           faq: parseFAQ(row.faq),
-          featured: parseBoolean(row.featured, false),
-          showOnHomepage: parseBoolean(row.showOnHomepage, false),
-          showInCatalogue: parseBoolean(row.showInCatalogue, true),
-          visible: parseBoolean(row.visible, true),
-          productOrder: parseInt(String(row.productOrder)) || 999,
-          whatsappCtaText: String(row.whatsappCtaText || 'Confirm Latest Price on WhatsApp').trim(),
-          whatsappMessage: String(row.whatsappMessage || '').trim(),
+          featured,
+          showOnHomepage,
+          showInCatalogue,
+          visible,
+          productOrder,
+          whatsappCtaText,
+          whatsappMessage,
           relatedBundleIds: parseMultiple(row.relatedBundleIds)
         };
 
-        // Custom Default for WhatsApp Message
-        if (!obj.whatsappMessage && obj.name) {
-          obj.whatsappMessage = `Hello EMutex Nig, I am interested in ${obj.name}. Please send me the current price, product details, delivery options, and how I can order.`;
-        }
-
-        // Validation
-        if (!obj.name) errors.push('Name is required');
-        if (!obj.slug) errors.push('Slug is required');
-        if (!obj.category) errors.push('Category is required');
-        if (!obj.shortDescription) errors.push('Short description is required');
-        if (!obj.fullDescription) errors.push('Full description is required');
-        if (!obj.imageUrl) errors.push('Image URL is required');
-        if (!['In Stock', 'Backorder', 'Out of Stock'].includes(obj.availability)) {
-          errors.push('Invalid availability. Use: In Stock, Backorder, or Out of Stock');
-        }
-
-        return { ...obj, errors, isValid: errors.length === 0 };
+        return { ...obj, errors, warnings, isValid: errors.length === 0 };
       });
 
       setParsedData(processedData);
@@ -427,7 +487,14 @@ export default function ProductCSVImport({ onClose, onSuccess }: CSVImportProps)
                           <tr key={i} className={row.isValid ? '' : 'bg-red-50/50'}>
                             <td className="px-4 py-3">
                               {row.isValid ? (
-                                <span className="text-emerald-500 font-bold flex items-center gap-1"><CheckCircle2 size={12} /> Ready</span>
+                                <div className="space-y-1">
+                                  <span className="text-emerald-500 font-bold flex items-center gap-1"><CheckCircle2 size={12} /> Ready</span>
+                                  {row.warnings && row.warnings.length > 0 && (
+                                    <div className="text-[9px] text-amber-600 font-medium bg-amber-50 p-1 rounded border border-amber-100 italic">
+                                       {row.warnings.map((warn, idx) => <p key={idx}>• {warn}</p>)}
+                                    </div>
+                                  )}
+                                </div>
                               ) : (
                                 <div className="space-y-1">
                                   <span className="text-red-500 font-bold flex items-center gap-1"><AlertCircle size={12} /> Error</span>

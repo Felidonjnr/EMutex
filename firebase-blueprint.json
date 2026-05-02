@@ -90,6 +90,7 @@
         "shortDescription": { "type": "string" },
         "fullDescription": { "type": "string" },
         "imageUrl": { "type": "string" },
+        "category": { "type": "string" },
         "price": { "type": "string" },
         "availability": { "type": "string" },
         "includedProductIds": { "type": "array" },
