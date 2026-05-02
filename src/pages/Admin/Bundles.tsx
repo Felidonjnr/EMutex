@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
-import { collection, getDocs, doc, deleteDoc, updateDoc, orderBy, query, where, serverTimestamp } from 'firebase/firestore';
-import { db, handleFirestoreError, OperationType } from '../../lib/firebase';
+import { collection, getDocs, doc, deleteDoc, updateDoc, orderBy, query, where, serverTimestamp, getDoc } from 'firebase/firestore';
+import { db, handleFirestoreError, OperationType, auth } from '../../lib/firebase';
 import AdminLayout from '../../components/layout/AdminLayout';
 import { Bundle, Product } from '../../types';
 import { 
@@ -35,6 +35,7 @@ export default function AdminBundles() {
   const [editingBundle, setEditingBundle] = useState<Bundle | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<Bundle | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
 
   useEffect(() => {
     fetchBundles();
@@ -73,13 +74,56 @@ export default function AdminBundles() {
 
   const handleDelete = async () => {
     if (!deleteConfirm) return;
+    setDeleteError(null);
+    
+    // 4. Check admin permission
+    if (!auth.currentUser) {
+      setDeleteError("You are not signed in. Please log in again.");
+      return;
+    }
+
+    const timeoutDuration = 15000; // 15 seconds
+    const deletePromise = deleteDoc(doc(db!, 'bundles', deleteConfirm.id));
+    
+    const timeoutPromise = new Promise((_, reject) => {
+      setTimeout(() => reject(new Error("TIMEOUT")), timeoutDuration);
+    });
+
     try {
       setIsDeleting(true);
-      await deleteDoc(doc(db!, 'bundles', deleteConfirm.id));
+      
+      // 2. Add timeout protection
+      await Promise.race([deletePromise, timeoutPromise]);
+
+      // 1. After deleteDoc succeeds, verify deletion by calling getDoc
+      const verifySnap = await getDoc(doc(db!, 'bundles', deleteConfirm.id));
+      if (verifySnap.exists()) {
+        throw new Error("Delete failed. Bundle still exists in Firestore.");
+      }
+
       setBundles(bundles.filter(b => b.id !== deleteConfirm.id));
       setDeleteConfirm(null);
-    } catch (error) {
-      handleFirestoreError(error, OperationType.DELETE, `bundles/${deleteConfirm.id}`);
+      alert("Bundle deleted permanently.");
+    } catch (error: any) {
+      console.error("Delete error:", error);
+      
+      if (error.message === "TIMEOUT") {
+        setDeleteError("Delete request timed out. Please check Firestore rules, internet connection, or admin permissions.");
+      } else {
+        // 3. Show real Firebase error
+        let errorMessage = error.message || String(error);
+        
+        try {
+          const parsed = JSON.parse(errorMessage);
+          errorMessage = parsed.error || errorMessage;
+        } catch (e) { }
+        
+        setDeleteError(`Delete failed: ${errorMessage}`);
+      }
+      
+      try {
+        handleFirestoreError(error, OperationType.DELETE, `bundles/${deleteConfirm.id}`);
+      } catch (e) { }
     } finally {
       setIsDeleting(false);
     }
@@ -373,14 +417,32 @@ export default function AdminBundles() {
                     <AlertTriangle size={32} />
                   </div>
                   <div className="space-y-2">
-                    <h3 className="text-2xl font-serif text-brand-emerald">Delete Bundle?</h3>
-                    <p className="text-brand-grey leading-relaxed">
-                      Are you sure you want to permanently delete <span className="font-bold text-brand-charcoal">"{deleteConfirm.name}"</span>?
+                    <h3 className="text-2xl font-serif text-brand-emerald">Delete Bundle Permanently?</h3>
+                    <p className="text-brand-grey leading-relaxed text-sm">
+                      Are you sure you want to permanently delete <span className="font-bold text-brand-charcoal text-base">"{deleteConfirm.name}"</span>? This action cannot be undone. Individual products will remain safe.
                     </p>
+
+                    {/* Admin Status Visibility */}
+                    <div className="mt-4 p-3 bg-brand-mist/20 rounded-xl space-y-1 text-[10px] font-mono text-brand-grey">
+                       <p>User: <span className="text-brand-charcoal">{auth.currentUser?.email || 'Unknown'}</span></p>
+                       <p>UID: <span className="text-brand-charcoal">{auth.currentUser?.uid || 'Not Set'}</span></p>
+                       <p>Status: <span className={cn(auth.currentUser ? "text-emerald-600" : "text-red-500")}>
+                         {auth.currentUser ? 'Authenticated' : 'Not Authenticated'}
+                       </span></p>
+                    </div>
                   </div>
+
+                  {deleteError && (
+                    <div className="p-4 bg-red-50 border border-red-100 rounded-xl text-red-600 text-xs font-bold flex gap-3 items-center">
+                       <ShieldAlert size={16} className="shrink-0" />
+                       <p>{deleteError}</p>
+                    </div>
+                  )}
+
                   <div className="flex gap-4 pt-2">
                     <button 
-                      onClick={() => setDeleteConfirm(null)}
+                      onClick={() => { setDeleteConfirm(null); setDeleteError(null); }}
+                      disabled={isDeleting}
                       className="flex-grow btn-secondary"
                     >
                       Cancel
@@ -388,17 +450,19 @@ export default function AdminBundles() {
                     <button 
                       onClick={handleDelete}
                       disabled={isDeleting}
-                      className="flex-grow py-3 bg-red-500 text-white rounded-xl font-bold hover:bg-red-600 transition-all flex items-center justify-center gap-2"
+                      className="flex-grow py-3 bg-red-500 text-white rounded-xl font-bold hover:bg-red-600 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
                     >
                       {isDeleting ? <Loader2 className="animate-spin" size={18} /> : <Trash2 size={18} />}
-                      {isDeleting ? 'Deleting...' : 'Delete Forever'}
+                      {isDeleting ? 'Deleting...' : 'Delete Permanently'}
                     </button>
                   </div>
                   <button 
                     onClick={async () => {
                       await toggleField(deleteConfirm, 'visible');
                       setDeleteConfirm(null);
+                      setDeleteError(null);
                     }}
+                    disabled={isDeleting}
                     className="w-full py-3 text-brand-grey text-xs font-bold uppercase tracking-widest hover:text-brand-charcoal transition-colors bg-brand-mist/20 rounded-xl"
                   >
                     Hide from website instead
