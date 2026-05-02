@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom';
 import { MessageCircle, ChevronRight, Sparkles } from 'lucide-react';
 import { Product } from '../types';
 import { useSiteContent } from '../context/SiteContentContext';
+import { generateSlug } from '../lib/utils';
 
 interface ProductCardProps {
   product: Product;
@@ -9,6 +10,11 @@ interface ProductCardProps {
 
 export default function ProductCard({ product }: ProductCardProps) {
   const { content } = useSiteContent();
+
+  const safeSlug = product.slug && product.slug.trim() 
+    ? generateSlug(product.slug) 
+    : generateSlug(product.name || product.id);
+
   const whatsappUrl = `https://wa.me/${content.contact.whatsappNumber}?text=${encodeURIComponent(
     product.whatsappMessage || `Hello ${content.brand.name}, I am interested in ${product.name}. Please send me the current price, product details, delivery options, and how I can order.`
   )}`;
@@ -77,7 +83,7 @@ export default function ProductCard({ product }: ProductCardProps) {
 
         <div className="pt-2 flex items-center gap-2">
           <Link 
-            to={`/products/${product.slug || product.id}`} 
+            to={`/products/${safeSlug}`} 
             className="bg-[#0E3B2E] text-white py-3 px-4 text-xs font-bold rounded-xl flex-grow text-center flex items-center justify-center gap-2 hover:opacity-90 transition-all"
           >
             View Details

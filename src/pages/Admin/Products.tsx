@@ -144,6 +144,8 @@ export default function AdminProducts() {
       const batch: Promise<void>[] = [];
       const usedSlugs = new Set<string>();
       
+      // Sort snapshots to maintain some order if possible, though doc IDs are semi-random
+      // We'll just process them and manage slugs
       snapshot.docs.forEach(docSnap => {
         const data = docSnap.data();
         const updates: any = {};
@@ -159,11 +161,13 @@ export default function AdminProducts() {
         }
         usedSlugs.add(finalSlug);
         
+        // Force update slug if it's missing or doesn't match our new clean generation rules
         if (finalSlug !== data.slug) {
            updates.slug = finalSlug;
         }
 
         // 2. Ensure booleans (Real booleans, not strings)
+        // If visible is missing (undefined), default to true as requested
         if (typeof data.visible !== 'boolean') updates.visible = data.visible === 'true' || data.visible === true || data.visible === undefined;
         if (typeof data.showInCatalogue !== 'boolean') updates.showInCatalogue = data.showInCatalogue === 'true' || data.showInCatalogue === true || data.showInCatalogue === undefined;
         if (typeof data.showOnHomepage !== 'boolean') updates.showOnHomepage = data.showOnHomepage === 'true' || data.showOnHomepage === true;
@@ -182,7 +186,7 @@ export default function AdminProducts() {
         if (!data.imageUrl) updates.imageUrl = 'https://images.unsplash.com/photo-1512069772995-ec65ed45afd6?auto=format&fit=crop&q=80&w=800';
 
         if (Object.keys(updates).length > 0) {
-          batch.push(updateDoc(docSnap.ref, { ...updates, updatedAt: serverTimestamp() }));
+          batch.push(updateDoc(doc(db!, 'products', docSnap.id), { ...updates, updatedAt: serverTimestamp() }));
         }
       });
       
@@ -219,10 +223,10 @@ export default function AdminProducts() {
               onClick={repairProducts}
               disabled={repairing}
               className="btn-secondary flex items-center gap-2 px-4 border-emerald-100 hover:bg-emerald-50"
-              title="Repair visibility and format fields for all products"
+              title="Regenerate slugs, fix visibility, and normalize product fields"
             >
               {repairing ? <Loader2 className="animate-spin" size={18} /> : <Wrench size={18} />}
-              <span className="hidden sm:inline">Repair Visibility</span>
+              <span className="hidden sm:inline">Repair Product Fields</span>
             </button>
             <button 
               onClick={() => setIsImportOpen(true)}

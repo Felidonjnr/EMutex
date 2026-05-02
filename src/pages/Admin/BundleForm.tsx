@@ -96,7 +96,8 @@ export default function BundleForm({ bundle, products, onClose, onSuccess }: Bun
       setSubmitError(null);
       
       const formData = data as BundleFormData;
-      const finalSlug = (formData.slug || generateSlug(formData.name)).trim();
+      // Force clean slug generation if missing or if user keeps it same as name but with bad chars
+      const finalSlug = generateSlug(formData.slug && formData.slug.trim() !== '' ? formData.slug : formData.name);
       
       // Clean up includedItems to remove empty strings
       const payload = {

@@ -83,7 +83,8 @@ export default function ProductForm({ product, onClose, onSuccess }: ProductForm
       setIsSubmitting(true);
       setSubmitError(null);
       
-      const finalSlug = (data.slug || generateSlug(data.name)).trim();
+      // Force clean slug generation if missing or if user keeps it same as name but with bad chars
+      const finalSlug = generateSlug(data.slug && data.slug.trim() !== '' ? data.slug : data.name);
       
       const payload = {
         ...data,

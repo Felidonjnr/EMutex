@@ -1,18 +1,18 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { collection, query, where, getDocs, limit, doc, getDoc } from 'firebase/firestore';
+import { collection, query, where, getDocs, limit, doc, getDoc, updateDoc } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { Bundle, Product } from '../types';
 import { useSiteContent } from '../context/SiteContentContext';
 import { motion } from 'framer-motion';
-import { MessageCircle, ChevronLeft, Sparkles, Package, Shield, Heart, CheckCircle2, ShoppingBag, ArrowUpRight, AlertTriangle } from 'lucide-react';
+import { MessageCircle, ChevronLeft, Sparkles, Package, Shield, Heart, CheckCircle2, ShoppingBag, ArrowUpRight, AlertTriangle, Loader2 } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
-import { cn } from '../lib/utils';
+import { cn, generateSlug } from '../lib/utils';
 import SEO from '../components/SEO';
 
 export default function BundleDetail() {
   const { content } = useSiteContent();
-  const { slug } = useParams<{ slug: string }>();
+  const { slug: bundleKey } = useParams<{ slug: string }>();
   const [bundle, setBundle] = useState<Bundle | null>(null);
   const [loading, setLoading] = useState(true);
   const [errorType, setErrorType] = useState<string | null>(null);
@@ -20,56 +20,87 @@ export default function BundleDetail() {
 
   useEffect(() => {
     async function fetchBundle() {
-      if (!db || !slug) {
+      if (!db || !bundleKey) {
         setLoading(false);
         return;
       }
+
+      setLoading(true);
+      setErrorType(null);
+      const normalizedKey = generateSlug(bundleKey);
+
       try {
-        setLoading(true);
         const bundlesRef = collection(db, 'bundles');
+        let bundleData: Bundle | null = null;
         
-        // Fetch by slug
-        const q = query(
+        // --- STEP 1: Exact Slug Match ---
+        const exactSlugQuery = query(
           bundlesRef, 
-          where('slug', '==', slug), 
+          where('slug', '==', bundleKey), 
           where('visible', '==', true),
           limit(1)
         );
-        let querySnapshot;
-        try {
-          querySnapshot = await getDocs(q);
-        } catch (err: any) {
-          if (err.message?.includes('Missing or insufficient permissions') || err.message?.includes('offline')) {
-            setErrorType("CONNECTION_ERROR");
-            return;
-          }
-          throw err;
+        const exactSnap = await getDocs(exactSlugQuery);
+        if (!exactSnap.empty) {
+          bundleData = { id: exactSnap.docs[0].id, ...exactSnap.docs[0].data() } as Bundle;
         }
 
-        let bundleData: Bundle | null = null;
+        // --- STEP 2: Normalized Slug Match ---
+        if (!bundleData && normalizedKey !== bundleKey) {
+          const normQuery = query(
+            bundlesRef,
+            where('slug', '==', normalizedKey),
+            where('visible', '==', true),
+            limit(1)
+          );
+          const normSnap = await getDocs(normQuery);
+          if (!normSnap.empty) {
+            bundleData = { id: normSnap.docs[0].id, ...normSnap.docs[0].data() } as Bundle;
+          }
+        }
 
-        if (!querySnapshot.empty) {
-          bundleData = { id: querySnapshot.docs[0].id, ...querySnapshot.docs[0].data() } as Bundle;
-        } else {
-           // Fallback catch-all for document ID
-           try {
-             const docRef = doc(db, 'bundles', slug);
-             const docSnap = await getDoc(docRef);
-             if (docSnap.exists()) {
-                const data = docSnap.data();
-                if (data.visible === true || (data.visible as any) === 'true') {
-                  bundleData = { id: docSnap.id, ...data } as Bundle;
-                }
-             }
-           } catch (e) {
-             // ID lookup failed
-           }
+        // --- STEP 3: Document ID Match ---
+        if (!bundleData) {
+          try {
+            const docRef = doc(db, 'bundles', bundleKey);
+            const docSnap = await getDoc(docRef);
+            if (docSnap.exists()) {
+              const data = docSnap.data();
+              if (data.visible !== false) {
+                bundleData = { id: docSnap.id, ...data } as Bundle;
+              }
+            }
+          } catch (e) { }
+        }
+
+        // --- STEP 4: Frontend Fuzzy Match ---
+        if (!bundleData) {
+          const allVisibleQuery = query(bundlesRef, where('visible', '==', true));
+          const allSnap = await getDocs(allVisibleQuery);
+          const allBundles = allSnap.docs.map(d => ({ id: d.id, ...d.data() } as Bundle));
+          
+          bundleData = allBundles.find(b => 
+            generateSlug(b.slug || '') === normalizedKey ||
+            generateSlug(b.name || '') === normalizedKey ||
+            b.id === bundleKey
+          ) || null;
+
+          // Repair Slug if found by name/id fallback
+          if (bundleData && (!bundleData.slug || generateSlug(bundleData.slug) !== generateSlug(bundleData.name))) {
+            try {
+              const newSlug = generateSlug(bundleData.name);
+              await updateDoc(doc(db, 'bundles', bundleData.id), { slug: newSlug });
+              bundleData.slug = newSlug;
+            } catch (e) {
+              console.warn("Failed to repair bundle slug on the fly", e);
+            }
+          }
         }
 
         if (bundleData) {
           setBundle(bundleData);
 
-          // Fetch linked products if any
+          // Fetch linked products
           if (bundleData.includedProductIds && bundleData.includedProductIds.length > 0) {
              const productsRef = collection(db, 'products');
              const productDocs = await Promise.all(
@@ -81,53 +112,61 @@ export default function BundleDetail() {
              setLinkedProducts(products);
           }
         }
-      } catch (error) {
-        console.warn(`Bundle detail access issues for ${slug}.`, error);
+      } catch (error: any) {
+        console.error(`Bundle resolution error for ${bundleKey}:`, error);
+        if (error.message?.includes('permission') || error.message?.includes('offline')) {
+          setErrorType("NETWORK_ERROR");
+        } else {
+          setErrorType("NOT_FOUND");
+        }
       } finally {
         setLoading(false);
       }
     }
 
     fetchBundle();
-  }, [slug]);
+  }, [bundleKey]);
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-brand-cream">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-brand-emerald"></div>
+      <div className="flex flex-col items-center justify-center min-h-[60vh] bg-brand-cream/30 text-center">
+        <Loader2 className="animate-spin text-brand-emerald mb-4" size={48} />
+        <p className="text-brand-grey font-medium">Resolving bundle details...</p>
       </div>
     );
   }
 
   if (!bundle) {
-    const isError = errorType === "CONNECTION_ERROR";
+    const isNetworkError = errorType === "NETWORK_ERROR";
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center space-y-6 px-4 bg-brand-cream text-center">
-        <div className="w-20 h-20 bg-brand-gold/10 rounded-full flex items-center justify-center text-brand-gold">
-          {isError ? <AlertTriangle size={40} /> : <Package size={40} />}
+      <div className="min-h-[80vh] flex flex-col items-center justify-center space-y-8 px-4 bg-brand-cream/30 text-center">
+        <div className="w-24 h-24 bg-brand-gold/10 rounded-full flex items-center justify-center text-brand-gold">
+          {isNetworkError ? <AlertTriangle size={48} /> : <Package size={48} />}
         </div>
-        <h2 className="text-3xl font-serif text-[#0E3B2E]">{isError ? 'Connection Issue' : 'Bundle Not Found'}</h2>
-        <p className="text-brand-grey max-w-sm">
-          {isError 
-            ? "We could not load this bundle right now. Please refresh or contact us on WhatsApp."
-            : "This wellness combination might have been moved or is no longer available. Please check our updated catalogue."}
-        </p>
-        <div className="flex flex-col sm:flex-row gap-4">
-          <Link to="/bundles" className="btn-primary flex items-center gap-2">
+        <div className="text-center space-y-3">
+          <h2 className="text-3xl font-serif text-[#0E3B2E]">
+            {isNetworkError ? 'Connection Issue' : 'Bundle Not Found'}
+          </h2>
+          <p className="text-brand-grey max-w-sm mx-auto leading-relaxed">
+            {isNetworkError 
+              ? "We could not load this bundle right now. Please refresh or contact us on WhatsApp."
+              : "This wellness combination might have been moved or is no longer available. Please check our updated catalogue."}
+          </p>
+        </div>
+        <div className="flex flex-col sm:flex-row gap-4 pt-4">
+          <Link to="/bundles" className="btn-primary flex items-center justify-center gap-2 px-10 py-4 shadow-xl shadow-brand-emerald/10">
             <ChevronLeft size={20} />
-            Back to Bundles
+            Explore Bundles
           </Link>
-          {isError && (
-            <a 
-              href={`https://wa.me/${content.contact.whatsappNumber}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="btn-secondary flex items-center justify-center gap-2 px-8"
-            >
-              <MessageCircle size={20} />
-              Ask on WhatsApp
-            </a>
-          )}
+          <a 
+            href={`https://wa.me/${content.brand.whatsappNumber.replace(/\+/g, '')}?text=${encodeURIComponent(`Hello, I'm looking for bundle: ${bundleKey}. Can you help me find it?`)}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="btn-secondary flex items-center justify-center gap-2 px-10 py-4 bg-white"
+          >
+            <MessageCircle size={20} />
+            Ask on WhatsApp
+          </a>
         </div>
       </div>
     );

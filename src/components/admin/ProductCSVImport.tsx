@@ -170,13 +170,13 @@ export default function ProductCSVImport({ onClose, onSuccess }: CSVImportProps)
         const name = String(row.name || '').trim();
         if (!name) errors.push('Name is required');
 
-        // 2. Slug generation (Rule: Ignore CSV slug, generate fresh from name)
+        // 2. Slug generation (Rule: Strictly ignore CSV slug, generate fresh from name)
         let slug = '';
         if (name) {
           const baseSlug = generateSlug(name);
           slug = baseSlug;
           
-          // Ensure uniqueness within the batch
+          // Ensure uniqueness within this batch
           let counter = 2;
           while (usedSlugsInBatch.has(slug)) {
             slug = `${baseSlug}-${counter}`;

@@ -1,19 +1,19 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { collection, query, where, getDocs, limit } from 'firebase/firestore';
+import { collection, query, where, getDocs, limit, doc, getDoc, updateDoc } from 'firebase/firestore';
 import { db, handleFirestoreError, OperationType } from '../lib/firebase';
 import { Product, Bundle } from '../types';
 import { useSiteContent } from '../context/SiteContentContext';
 import LeadPopup from '../components/LeadPopup';
 import { motion } from 'framer-motion';
-import { MessageCircle, CheckCircle2, ChevronLeft, Sparkles, ShoppingBag, Info, Shield, HelpCircle, Heart, ChevronRight, MapPin, Package, AlertTriangle } from 'lucide-react';
+import { MessageCircle, CheckCircle2, ChevronLeft, Sparkles, ShoppingBag, Info, Shield, HelpCircle, Heart, ChevronRight, MapPin, Package, AlertTriangle, Loader2 } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
-import { cn } from '../lib/utils';
+import { cn, generateSlug } from '../lib/utils';
 import SEO from '../components/SEO';
 
 export default function ProductDetail() {
   const { content } = useSiteContent();
-  const { slug } = useParams<{ slug: string }>();
+  const { slug: productKey } = useParams<{ slug: string }>();
   const [product, setProduct] = useState<Product | null>(null);
   const [loading, setLoading] = useState(true);
   const [errorType, setErrorType] = useState<string | null>(null);
@@ -22,45 +22,54 @@ export default function ProductDetail() {
 
   useEffect(() => {
     async function fetchProduct() {
-      if (!db || !slug) {
+      if (!db || !productKey) {
         setLoading(false);
         return;
       }
+
+      setLoading(true);
+      setErrorType(null);
+      const normalizedKey = generateSlug(productKey);
+
       try {
-        setLoading(true);
         const productsRef = collection(db, 'products');
-        
-        // 1. Try fetching by slug
-        const q = query(
-          productsRef, 
-          where('slug', '==', slug), 
+        let productData: Product | null = null;
+
+        // --- STEP 1: Exact Slug Match ---
+        const exactSlugQuery = query(
+          productsRef,
+          where('slug', '==', productKey),
           where('visible', '==', true),
           limit(1)
         );
-        let querySnapshot;
-        try {
-          querySnapshot = await getDocs(q);
-        } catch (err: any) {
-           if (err.message?.includes('Missing or insufficient permissions') || err.message?.includes('offline')) {
-             setErrorType("CONNECTION_ERROR");
-             return;
-           }
-           throw err;
+        const exactSlugSnap = await getDocs(exactSlugQuery);
+        
+        if (!exactSlugSnap.empty) {
+          productData = { id: exactSlugSnap.docs[0].id, ...exactSlugSnap.docs[0].data() } as Product;
         }
 
-        let productData: Product | null = null;
+        // --- STEP 2: Normalized Slug Match ---
+        if (!productData && normalizedKey !== productKey) {
+          const normSlugQuery = query(
+            productsRef,
+            where('slug', '==', normalizedKey),
+            where('visible', '==', true),
+            limit(1)
+          );
+          const normSlugSnap = await getDocs(normSlugQuery);
+          if (!normSlugSnap.empty) {
+            productData = { id: normSlugSnap.docs[0].id, ...normSlugSnap.docs[0].data() } as Product;
+          }
+        }
 
-        if (!querySnapshot.empty) {
-          productData = { id: querySnapshot.docs[0].id, ...querySnapshot.docs[0].data() } as Product;
-        } else {
-          // 2. Fallback: try fetching by document ID
+        // --- STEP 3: Document ID Match ---
+        if (!productData) {
           try {
-            const { doc, getDoc } = await import('firebase/firestore');
-            const docRef = doc(db, 'products', slug);
+            const docRef = doc(db, 'products', productKey);
             const docSnap = await getDoc(docRef);
             if (docSnap.exists()) {
               const data = docSnap.data();
-              if (data.visible === true || (data.visible as any) === 'true') {
+              if (data.visible !== false) {
                 productData = { id: docSnap.id, ...data } as Product;
               }
             }
@@ -69,87 +78,116 @@ export default function ProductDetail() {
           }
         }
 
+        // --- STEP 4: Frontend Fuzzy Match & Fallback ---
+        if (!productData) {
+          const allVisibleQuery = query(productsRef, where('visible', '==', true));
+          const allSnap = await getDocs(allVisibleQuery);
+          const allProducts = allSnap.docs.map(d => ({ id: d.id, ...d.data() } as Product));
+          
+          productData = allProducts.find(p => 
+            generateSlug(p.slug || '') === normalizedKey ||
+            generateSlug(p.name || '') === normalizedKey ||
+            p.id === productKey
+          ) || null;
+
+          // Repair Slug if found by name/id fallback
+          if (productData && (!productData.slug || generateSlug(productData.slug) !== generateSlug(productData.name))) {
+            try {
+              const newSlug = generateSlug(productData.name);
+              await updateDoc(doc(db, 'products', productData.id), { 
+                slug: newSlug 
+              });
+              productData.slug = newSlug;
+            } catch (e) {
+              console.warn("Failed to repair product slug on the fly", e);
+            }
+          }
+        }
+
         if (productData) {
           setProduct(productData);
 
-          // Fetch related products - Simplified to avoid index errors
-          // We query by category and visible only
+          // Fetch related
           if (productData.category) {
             try {
-              const relatedQ = query(
-                productsRef, 
-                where('category', '==', productData.category), 
+              const relatedQuery = query(
+                productsRef,
+                where('category', '==', productData.category),
                 where('visible', '==', true),
                 limit(10)
               );
-              const relatedSnap = await getDocs(relatedQ);
-              const relatedData = relatedSnap.docs
-                .map(doc => ({ id: doc.id, ...doc.data() } as Product))
-                .filter(p => p.id !== productData?.id && p.slug !== slug)
+              const relatedSnap = await getDocs(relatedQuery);
+              const filtered = relatedSnap.docs
+                .map(d => ({ id: d.id, ...d.data() } as Product))
+                .filter(p => p.id !== productData?.id)
                 .slice(0, 3);
-              setRelatedProducts(relatedData);
+              setRelatedProducts(filtered);
             } catch (e) {
-              console.warn("Related products query failed", e);
+              console.warn("Related products failed", e);
             }
           }
 
-          // Fetch related bundles
           const bundlesRef = collection(db, 'bundles');
-          const bundlesQ = query(
+          const bundlesQuery = query(
             bundlesRef,
             where('visible', '==', true),
             where('includedProductIds', 'array-contains', productData.id)
           );
-          const bundlesSnap = await getDocs(bundlesQ);
-          setRelatedBundles(bundlesSnap.docs.map(doc => ({ id: doc.id, ...doc.data() } as Bundle)));
-        } else {
-          setProduct(null);
+          const bundlesSnap = await getDocs(bundlesQuery);
+          setRelatedBundles(bundlesSnap.docs.map(d => ({ id: d.id, ...d.data() } as Bundle)));
         }
-      } catch (error) {
-        console.warn(`Product detail access issues for ${slug}. Showing error state.`, error);
-        setProduct(null);
+      } catch (error: any) {
+        console.error(`Product resolution error for ${productKey}:`, error);
+        if (error.message?.includes('permission') || error.message?.includes('offline')) {
+          setErrorType("NETWORK_ERROR");
+        } else {
+          setErrorType("NOT_FOUND");
+        }
       } finally {
         setLoading(false);
       }
     }
 
     fetchProduct();
-  }, [slug]);
+  }, [productKey]);
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-brand-cream">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-brand-emerald"></div>
+      <div className="flex flex-col items-center justify-center min-h-[60vh] bg-brand-cream/30">
+        <Loader2 className="animate-spin text-brand-emerald mb-4" size={48} />
+        <p className="text-brand-grey font-medium">Resolving product details...</p>
       </div>
     );
   }
 
   if (!product) {
-    const isError = errorType === "CONNECTION_ERROR";
+    const isNetworkError = errorType === "NETWORK_ERROR";
     
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center space-y-6 px-4 bg-brand-cream">
-        <div className="w-20 h-20 bg-brand-gold/10 rounded-full flex items-center justify-center text-brand-gold">
-          {isError ? <AlertTriangle size={40} /> : <ShoppingBag size={40} />}
+      <div className="min-h-[80vh] flex flex-col items-center justify-center space-y-8 px-4 bg-brand-cream/30">
+        <div className="w-24 h-24 bg-brand-gold/10 rounded-full flex items-center justify-center text-brand-gold">
+          {isNetworkError ? <AlertTriangle size={48} /> : <ShoppingBag size={48} />}
         </div>
-        <div className="text-center space-y-2">
-          <h2 className="text-3xl font-serif text-[#0E3B2E]">{isError ? 'Connection Issue' : 'Product Not Found'}</h2>
-          <p className="text-brand-grey max-w-sm">
-            {isError 
+        <div className="text-center space-y-3">
+          <h2 className="text-3xl font-serif text-[#0E3B2E]">
+            {isNetworkError ? 'Connection Issue' : 'Product Not Found'}
+          </h2>
+          <p className="text-brand-grey max-w-sm mx-auto leading-relaxed">
+            {isNetworkError 
               ? "We could not load this product right now. Please refresh or contact us on WhatsApp."
               : "This product might be hidden or the link is incorrect. Please contact us on WhatsApp if you need help."}
           </p>
         </div>
-        <div className="flex flex-col sm:flex-row gap-4">
-          <Link to="/products" className="btn-primary flex items-center justify-center gap-2 px-8">
+        <div className="flex flex-col sm:flex-row gap-4 pt-4">
+          <Link to="/products" className="btn-primary flex items-center justify-center gap-2 px-10 py-4 shadow-xl shadow-brand-emerald/10">
             <ChevronLeft size={20} />
-            Back to Catalogue
+            Explore Catalogue
           </Link>
           <a 
-            href={`https://wa.me/${content.contact.whatsappNumber}`}
+            href={`https://wa.me/${content.brand.whatsappNumber.replace(/\+/g, '')}?text=${encodeURIComponent(`Hello, I'm looking for product: ${productKey}. Can you help me find it?`)}`}
             target="_blank"
             rel="noopener noreferrer"
-            className="btn-secondary flex items-center justify-center gap-2 px-8"
+            className="btn-secondary flex items-center justify-center gap-2 px-10 py-4 bg-white"
           >
             <MessageCircle size={20} />
             Ask on WhatsApp

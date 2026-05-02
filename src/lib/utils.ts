@@ -12,11 +12,10 @@ export function generateSlug(name: string): string {
     .toLowerCase()
     .trim()
     .replace(/&/g, 'and')
-    .replace(/[^a-z0-9\s-]/g, '') // Remove special characters
-    .replace(/\s+/g, '-')         // Replace spaces with hyphens
-    .replace(/-+/g, '-')          // Remove duplicate hyphens
-    .replace(/^-+/, '')           // Remove leading hyphen
-    .replace(/-+$/, '');          // Remove trailing hyphen
+    .replace(/[^a-z0-9]+/g, '-')    // Replace any non-alphanumeric character with a hyphen
+    .replace(/-+/g, '-')             // Replace multiple hyphens with a single hyphen
+    .replace(/^-+/, '')              // Remove leading hyphens
+    .replace(/-+$/, '');             // Remove trailing hyphens
 }
 
 export function formatDate(date: Date | string | number) {
