@@ -21,7 +21,8 @@ import {
   ShoppingBag,
   Wrench,
   CheckCircle2,
-  Shield
+  Shield,
+  AlertCircle
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -298,44 +299,48 @@ export default function AdminProducts() {
         </div>
 
         {/* List */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 admin-products-grid">
            {loading ? (
-             [1, 2, 3, 4, 5, 6].map(i => <div key={i} className="card h-96 animate-pulse bg-white" />)
+             [1, 2, 3, 4, 5, 6].map(i => <div key={i} className="admin-product-card h-96 animate-pulse" />)
            ) : filteredProducts.length > 0 ? (
              filteredProducts.map(product => (
-               <div key={product.id} className="card bg-white hover:border-brand-gold transition-all group overflow-hidden flex flex-col">
-                  <div className="h-48 bg-brand-mist flex items-center justify-center relative overflow-hidden shrink-0">
+               <div key={product.id} className="admin-product-card group/card">
+                  <div className="admin-image-wrap relative">
                      {product.imageUrl ? (
-                        <img src={product.imageUrl} alt={product.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" referrerPolicy="no-referrer" />
+                        <img 
+                          src={product.imageUrl} 
+                          alt={product.name} 
+                          width="400"
+                          height="225"
+                          loading="lazy"
+                          referrerPolicy="no-referrer" 
+                        />
                      ) : (
-                        <ImageIcon size={48} className="text-brand-gold opacity-20" />
+                        <div className="w-full h-full flex items-center justify-center">
+                           <ImageIcon size={48} className="text-brand-gold opacity-20" />
+                        </div>
                      )}
-                     <div className="absolute top-3 right-3 flex flex-col gap-2">
+                     <div className="absolute top-3 right-3 flex flex-col gap-2 z-10">
                         <StatusBadge type="visibility" active={product.visible} />
                         <StatusBadge type="stock" value={product.availability} />
                      </div>
-                     <div className="absolute bottom-3 left-3 flex gap-1.5">
-                        {product.featured && <div className="px-2 py-0.5 bg-brand-gold text-white rounded text-[8px] font-bold uppercase tracking-widest shadow-lg">Featured</div>}
-                        {product.showOnHomepage && <div className="px-2 py-0.5 bg-brand-emerald text-white rounded text-[8px] font-bold uppercase tracking-widest shadow-lg">Home</div>}
-                        {product.showInCatalogue && <div className="px-2 py-0.5 bg-brand-charcoal text-white rounded text-[8px] font-bold uppercase tracking-widest shadow-lg">Catalogue</div>}
-                     </div>
                   </div>
-                  <div className="p-6 space-y-6 flex-grow flex flex-col">
+                  <div className="p-5 space-y-4 flex-grow flex flex-col">
                      <div className="space-y-1 flex-grow">
                         <div className="flex items-center justify-between">
-                          <span className="text-[10px] font-bold text-brand-gold uppercase tracking-widest">{product.category}</span>
-                          <span className="text-[10px] font-bold text-brand-grey">Order: {product.productOrder}</span>
+                           <span className="text-[9px] font-bold text-brand-gold uppercase tracking-widest">{product.category}</span>
+                           <span className="text-[9px] font-bold text-brand-grey">#{product.productOrder}</span>
                         </div>
-                        <h3 className="font-serif text-xl text-brand-emerald group-hover:text-brand-gold transition-colors">{product.name}</h3>
-                        <p className="text-xs text-brand-grey line-clamp-2 leading-relaxed">{product.shortDescription}</p>
+                        <h3 className="font-serif text-lg text-brand-emerald line-clamp-1">{product.name}</h3>
+                        <p className="text-xs text-brand-grey line-clamp-2 leading-relaxed min-h-[2.5rem]">{product.shortDescription}</p>
                         
-                        <div className="pt-2">
-                           <p className="text-sm font-bold text-brand-charcoal">Price: {product.price}</p>
+                        <div className="pt-2 border-t border-brand-champagne/10">
+                           <p className="text-xs font-bold text-brand-charcoal">₦{product.price || 'WhatsApp'}</p>
                         </div>
                      </div>
-
+ 
                      {/* Quick Toggles */}
-                     <div className="grid grid-cols-2 gap-2 p-3 bg-brand-mist/20 rounded-xl">
+                     <div className="grid grid-cols-2 gap-2 p-2 bg-brand-mist/20 rounded-xl">
                         <QuickToggle 
                           active={product.visible} 
                           onClick={() => toggleField(product, 'visible')} 
@@ -348,44 +353,32 @@ export default function AdminProducts() {
                           icon={Star} 
                           label="Featured" 
                         />
-                        <QuickToggle 
-                          active={product.showOnHomepage} 
-                          onClick={() => toggleField(product, 'showOnHomepage')} 
-                          icon={Home} 
-                          label="Homepage" 
-                        />
-                        <QuickToggle 
-                          active={product.showInCatalogue} 
-                          onClick={() => toggleField(product, 'showInCatalogue')} 
-                          icon={Layout} 
-                          label="Catalogue" 
-                        />
                      </div>
-
-                     <div className="pt-2 flex items-center justify-between gap-4 border-t border-brand-champagne/10">
+ 
+                     <div className="pt-3 flex items-center justify-between gap-3 border-t border-brand-champagne/10">
                         <div className="flex items-center gap-2">
                            <button 
                              onClick={() => { setEditingProduct(product); setIsFormOpen(true); }}
-                             className="p-2.5 text-brand-emerald hover:bg-brand-emerald/10 rounded-xl transition-all border border-brand-emerald/10 hover:border-brand-emerald/30 group/edit"
-                             title="Edit product"
+                             className="p-3 text-brand-emerald bg-brand-mist/20 rounded-xl hover:bg-brand-mist/40 transition-all border border-brand-emerald/10"
+                             title="Edit"
                            >
-                              <Edit2 size={18} className="group-hover/edit:scale-110 transition-transform" />
+                              <Edit2 size={16} />
                            </button>
                            <Link 
                              to={`/products/${product.slug}`}
                              target="_blank"
-                             className="p-2.5 text-brand-gold hover:bg-brand-gold/10 rounded-xl transition-all border border-brand-gold/10 hover:border-brand-gold/30 group/view"
-                             title="View live product"
+                             className="p-3 text-brand-gold bg-brand-gold/10 rounded-xl hover:bg-brand-gold/20 transition-all border border-brand-gold/10"
+                             title="View"
                            >
-                              <ArrowUpRight size={18} className="group-hover/view:scale-110 group-hover/view:translate-x-0.5 group-hover/view:-translate-y-0.5 transition-transform" />
+                              <ArrowUpRight size={16} />
                            </Link>
                         </div>
                         <button 
                            onClick={() => setDeleteConfirm(product)}
-                           className="p-2.5 text-red-400 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all border border-red-100 hover:border-red-200 group/del"
-                           title="Delete product"
+                           className="p-3 text-red-500 bg-red-50 rounded-xl hover:bg-red-100 transition-all border border-red-100"
+                           title="Delete"
                         >
-                           <Trash2 size={18} className="group-hover/del:scale-110 transition-transform" />
+                           <Trash2 size={16} />
                         </button>
                      </div>
                   </div>
@@ -448,7 +441,7 @@ export default function AdminProducts() {
 
                   {deleteError && (
                     <div className="p-4 bg-red-50 border border-red-100 rounded-xl text-red-600 text-xs font-bold flex gap-3 items-center">
-                       <ShieldAlert size={16} className="shrink-0" />
+                       <AlertCircle size={16} className="shrink-0" />
                        <p>{deleteError}</p>
                     </div>
                   )}
@@ -489,7 +482,7 @@ export default function AdminProducts() {
       {/* Danger Zone */}
       <div className="pt-20 border-t border-brand-champagne/20 mb-20">
          <div className="bg-red-50/50 border border-red-100 rounded-[2.5rem] p-10 overflow-hidden relative group">
-            <div className="absolute right-0 top-0 p-12 text-red-500 opacity-5 group-hover:opacity-10 transition-opacity">
+            <div className="absolute right-0 top-0 p-12 text-red-500 opacity-5 md:group-hover:opacity-10 transition-opacity">
                <AlertTriangle size={200} />
             </div>
             <div className="relative z-10 space-y-6">

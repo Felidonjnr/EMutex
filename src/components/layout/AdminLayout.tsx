@@ -124,7 +124,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         "fixed inset-0 z-50 lg:hidden transition-opacity duration-300",
         isSidebarOpen ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
       )}>
-        <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setIsSidebarOpen(false)} />
+        <div className="absolute inset-0 bg-black/60" onClick={() => setIsSidebarOpen(false)} />
         <aside className={cn(
           "absolute left-0 top-0 bottom-0 w-72 bg-brand-emerald text-white p-6 transition-transform duration-300 transform",
           isSidebarOpen ? "translate-x-0" : "-translate-x-full"

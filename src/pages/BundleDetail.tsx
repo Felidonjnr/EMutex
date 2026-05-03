@@ -159,7 +159,7 @@ export default function BundleDetail() {
             Explore Bundles
           </Link>
           <a 
-            href={`https://wa.me/${content.brand.whatsappNumber.replace(/\+/g, '')}?text=${encodeURIComponent(`Hello, I'm looking for bundle: ${bundleKey}. Can you help me find it?`)}`}
+            href={`https://wa.me/${content.contact.whatsappNumber.replace(/\+/g, '')}?text=${encodeURIComponent(`Hello, I'm looking for bundle: ${bundleKey}. Can you help me find it?`)}`}
             target="_blank"
             rel="noopener noreferrer"
             className="btn-secondary flex items-center justify-center gap-2 px-10 py-4 bg-white"
@@ -200,174 +200,171 @@ export default function BundleDetail() {
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.4 }}
-            className="image-wrapper aspect-bundle bg-white flex items-center justify-center relative overflow-hidden shadow-sm border border-brand-champagne/30 hero-card"
+            className="image-wrapper aspect-[3/4] bg-white flex items-center justify-center relative overflow-hidden rounded-[2.5rem] border border-brand-champagne/30 p-6 md:p-10"
           >
             {bundle.imageUrl ? (
               <img 
                 src={bundle.imageUrl} 
                 alt={bundle.name} 
-                width="800"
-                height="600"
-                className="w-full h-full object-cover" 
+                width="600"
+                height="800"
+                className="w-full h-full object-contain" 
                 referrerPolicy="no-referrer" 
               />
             ) : (
               <Package size={120} className="text-brand-gold opacity-10" />
             )}
             {bundle.featured && (
-              <div className="absolute top-6 left-6 bg-brand-gold text-white px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-widest shadow-lg">
-                Featured Bundle
+              <div className="absolute top-8 left-8 bg-brand-gold text-white px-4 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-widest shadow-lg">
+                Premium Bundle
               </div>
             )}
           </motion.div>
 
-          <div className="space-y-8">
-            <div className="space-y-4">
-              <span className="inline-block px-3 py-1 bg-brand-gold/10 text-brand-gold rounded-lg text-xs font-bold uppercase tracking-widest">
-                Wellness Combination
-              </span>
-              <h1 className="text-4xl lg:text-5xl lg:leading-tight text-[#0E3B2E] font-serif">{bundle.name}</h1>
-              <p className="text-xl text-brand-grey font-medium leading-relaxed italic border-l-4 border-brand-gold pl-4">
+          <div className="space-y-10">
+            <div className="space-y-6">
+              <div className="space-y-3">
+                <h1 className="text-4xl lg:text-5xl lg:leading-tight text-brand-emerald font-serif">{bundle.name}</h1>
+                <div className="flex items-center gap-3">
+                  <span className={cn(
+                    "px-3 py-1 rounded-lg text-[10px] font-bold uppercase tracking-widest border shadow-sm",
+                    bundle.availability === 'In Stock' ? "bg-emerald-50 text-emerald-600 border-emerald-100" : "bg-brand-gold/10 text-brand-gold border-brand-gold/10"
+                  )}>
+                    {bundle.availability}
+                  </span>
+                  <span className="text-[10px] font-bold text-brand-grey uppercase tracking-widest">{bundle.category || 'Wellness Package'}</span>
+                </div>
+              </div>
+              
+              <p className="text-lg text-brand-grey font-medium leading-relaxed">
                 {bundle.shortDescription}
               </p>
+
+              <div className="pt-6 border-t border-brand-champagne/20">
+                <p className="text-[10px] uppercase font-bold tracking-widest text-brand-grey/60 mb-2">Investment</p>
+                <p className="text-3xl font-bold text-brand-emerald">
+                   {bundle.price ? `₦${bundle.price.replace('₦', '').trim()}` : 'Ask on WhatsApp'}
+                </p>
+              </div>
             </div>
 
-            <div className="card p-6 bg-[#FAF7F0] border-brand-champagne/30">
-               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                  <div className="space-y-1">
-                    <p className="text-[10px] uppercase font-bold tracking-[0.2em] text-brand-grey/60">Bundle Price</p>
-                    <p className="text-2xl font-bold text-brand-emerald">
-                       {bundle.price ? `Price: ₦${bundle.price.replace('₦', '').trim()}` : 'Confirm current price on WhatsApp'}
-                    </p>
-                    {bundle.price && <p className="text-[10px] text-brand-grey italic">Please confirm the latest price before ordering.</p>}
-                  </div>
-                  <div className="shrink-0">
-                    <span className={cn(
-                        "px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest shadow-sm",
-                        bundle.availability === 'In Stock' ? "bg-emerald-100 text-emerald-600" : "bg-brand-gold/10 text-brand-gold"
-                    )}>
-                      {bundle.availability}
-                    </span>
-                  </div>
-               </div>
-            </div>
-
-            <div className="space-y-4 pt-4">
+            <div className="space-y-4">
               <a 
                 href={whatsappUrl} 
                 target="_blank" 
                 rel="noopener noreferrer"
-                className="btn-primary w-full py-5 text-xl flex items-center justify-center gap-3 shadow-2xl"
+                className="btn-primary w-full py-5 text-lg flex items-center justify-center gap-3 shadow-xl"
               >
-                <MessageCircle size={28} />
+                <MessageCircle size={24} />
                 Confirm Bundle Price on WhatsApp
               </a>
-              {bundle.disclaimer && (
-                <p className="text-[10px] text-brand-grey bg-brand-mist/20 p-4 rounded-xl border border-brand-champagne/10 italic">
-                   <strong>Note:</strong> {bundle.disclaimer}
-                </p>
-              )}
+              <p className="text-[11px] text-brand-grey text-center font-medium">
+                Confirm availability and delivery options instantly via WhatsApp.
+              </p>
             </div>
           </div>
         </div>
       </section>
 
-      {/* New Details Section */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-20">
+      {/* Content Breakdown */}
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-24">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-16">
-          <div className="lg:col-span-8 space-y-16">
+          <div className="lg:col-span-8 space-y-20">
             
-            {/* Benefits & Best For */}
-            {(bundle.benefits?.length > 0 || bundle.bestFor) && (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
-                {bundle.benefits?.length > 0 && (
-                  <div className="space-y-6">
-                    <h3 className="text-xl font-serif text-brand-emerald flex items-center gap-2">
-                       <Sparkles size={20} className="text-brand-gold" /> Key Benefits
-                    </h3>
-                    <ul className="space-y-3">
-                      {bundle.benefits.map((benefit, i) => (
-                        <li key={i} className="flex gap-3 text-sm text-brand-charcoal">
-                           <CheckCircle2 size={18} className="text-emerald-500 shrink-0" />
-                           {benefit}
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-                {bundle.bestFor && (
-                  <div className="space-y-6">
-                    <h3 className="text-xl font-serif text-brand-emerald flex items-center gap-2">
-                       <Heart size={20} className="text-brand-gold" /> Ideal For
-                    </h3>
-                    <p className="text-sm text-brand-charcoal leading-relaxed bg-brand-mist/20 p-6 rounded-2xl border border-brand-champagne/10">
-                       {bundle.bestFor}
-                    </p>
-                  </div>
-                )}
-              </div>
-            )}
-
-            <div className="space-y-8">
-              <div className="flex items-center gap-3 text-[#0E3B2E] border-b border-brand-champagne/30 pb-4">
-                <Shield size={28} className="text-brand-gold" />
-                <h2 className="text-3xl font-serif">What’s Included</h2>
+            {/* What's Included */}
+            <div className="space-y-10">
+              <div className="space-y-2">
+                <h2 className="text-3xl font-serif text-brand-emerald">What’s Included</h2>
+                <p className="text-sm text-brand-grey max-w-lg">Every item in this bundle is professional grade and carefully selected for maximum synergy.</p>
               </div>
               
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                  {/* Linked Products */}
                  {linkedProducts.map(product => (
-                    <div key={product.id} className="card p-6 bg-white flex items-center gap-4 group hover:border-brand-gold transition-all">
+                    <Link key={product.id} to={`/products/${product.slug}`} className="p-5 bg-white border border-brand-champagne/20 rounded-2xl flex items-center gap-4 group transition-all">
                        <div className="w-16 h-16 rounded-xl bg-brand-mist/20 overflow-hidden shrink-0">
                           {product.imageUrl ? <img src={product.imageUrl} alt="" className="w-full h-full object-cover" /> : <ShoppingBag className="w-full h-full p-4 text-brand-gold" />}
                        </div>
                        <div className="flex-grow">
-                          <h4 className="font-bold text-brand-emerald leading-tight">{product.name}</h4>
-                          <Link to={`/products/${product.slug}`} className="text-[10px] font-bold text-brand-gold uppercase tracking-widest hover:underline flex items-center gap-1 mt-1">
-                             View Details <ArrowUpRight size={10} />
-                          </Link>
+                          <h4 className="font-bold text-brand-emerald text-sm leading-tight line-clamp-1">{product.name}</h4>
+                          <span className="text-[9px] font-bold text-brand-gold uppercase tracking-widest flex items-center gap-1 mt-1">
+                             Details <ArrowUpRight size={10} />
+                          </span>
                        </div>
-                    </div>
+                    </Link>
                  ))}
 
                  {/* Manual Items */}
                  {bundle.includedItems?.map((item, idx) => (
-                    <div key={`manual-${idx}`} className="card p-6 bg-brand-mist/10 flex items-center gap-4 border-dashed">
-                       <div className="w-12 h-12 rounded-xl bg-white flex items-center justify-center text-brand-gold shrink-0 shadow-sm">
-                          <CheckCircle2 size={24} />
+                    <div key={`manual-${idx}`} className="p-5 bg-brand-mist/5 border border-dashed border-brand-champagne/30 rounded-2xl flex items-center gap-4">
+                       <div className="w-12 h-12 rounded-xl bg-white border border-brand-champagne/10 flex items-center justify-center text-brand-gold shrink-0 shadow-sm">
+                          <CheckCircle2 size={20} />
                        </div>
                        <div>
-                          <p className="font-bold text-brand-charcoal">{item}</p>
-                          <p className="text-[10px] text-brand-grey uppercase tracking-widest">Included Item</p>
+                          <p className="font-bold text-brand-charcoal text-sm">{item}</p>
+                          <p className="text-[9px] text-brand-grey uppercase tracking-widest">Included Content</p>
                        </div>
                     </div>
                  ))}
               </div>
             </div>
 
-            <div className="space-y-8">
-              <div className="flex items-center gap-3 text-[#0E3B2E] border-b border-brand-champagne/30 pb-4">
-                <Heart size={28} className="text-brand-gold" />
-                <h2 className="text-3xl font-serif">Bundle Description</h2>
+            {/* Who This Bundle Is For */}
+            {(bundle.benefits?.length > 0 || bundle.bestFor) && (
+              <div className="space-y-10 pt-10 border-t border-brand-champagne/20">
+                <h2 className="text-3xl font-serif text-brand-emerald">Who This Bundle Is For</h2>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
+                  {bundle.bestFor && (
+                    <div className="space-y-4">
+                      <p className="text-brand-charcoal leading-relaxed text-sm">
+                         {bundle.bestFor}
+                      </p>
+                      {bundle.disclaimer && (
+                        <div className="p-4 bg-brand-gold/5 rounded-xl border border-brand-gold/10 text-[11px] text-brand-grey italic">
+                          <span className="font-bold text-brand-gold uppercase tracking-widest block mb-1">Disclaimer</span>
+                           {bundle.disclaimer}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                  {bundle.benefits?.length > 0 && (
+                    <div className="space-y-6">
+                      <h3 className="text-sm font-bold text-brand-gold uppercase tracking-widest">Core Advantages</h3>
+                      <ul className="space-y-4">
+                        {bundle.benefits.map((benefit, i) => (
+                          <li key={i} className="flex gap-4 text-sm text-brand-charcoal">
+                             <CheckCircle2 size={18} className="text-emerald-600 shrink-0" />
+                             {benefit}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                </div>
               </div>
-              <div className="markdown-body text-brand-charcoal text-lg leading-relaxed">
-                <ReactMarkdown>{bundle.fullDescription}</ReactMarkdown>
+            )}
+
+            {/* Detailed Overview */}
+            {bundle.fullDescription && (
+              <div className="space-y-10 pt-10 border-t border-brand-champagne/20">
+                <h2 className="text-3xl font-serif text-brand-emerald">Detailed Overview</h2>
+                <div className="markdown-body shadow-none p-0 bg-transparent text-brand-charcoal text-base leading-relaxed">
+                  <ReactMarkdown>{bundle.fullDescription}</ReactMarkdown>
+                </div>
               </div>
-            </div>
+            )}
 
             {/* Usage Notes & FAQ */}
             {(bundle.usageNote || (bundle.faq && bundle.faq.length > 0)) && (
-              <div className="space-y-16">
+              <div className="space-y-16 pt-10 border-t border-brand-champagne/20">
                  {bundle.usageNote && (
                    <div className="space-y-6">
                       <h3 className="text-2xl font-serif text-brand-emerald flex items-center gap-3">
-                         <Info size={24} className="text-brand-gold" /> Usage Recommendation
+                         <Info size={24} className="text-brand-gold" /> Usage Note
                       </h3>
-                      <div className="p-8 bg-brand-charcoal text-white rounded-3xl shadow-xl relative overflow-hidden contain-paint">
-                         <div className="absolute right-0 top-0 p-12 text-white/5 decorative-layer">
-                            <Sparkles size={100} />
-                         </div>
-                         <p className="relative z-10 italic leading-relaxed text-brand-champagne/90">
+                      <div className="p-8 bg-brand-emerald text-white rounded-3xl shadow-xl">
+                         <p className="italic leading-relaxed text-brand-champagne/90 text-sm">
                             {bundle.usageNote}
                          </p>
                       </div>
@@ -376,17 +373,17 @@ export default function BundleDetail() {
 
                  {bundle.faq && bundle.faq.length > 0 && (
                    <div className="space-y-8">
-                      <h3 className="text-2xl font-serif text-brand-emerald flex items-center gap-3 border-b border-brand-champagne/30 pb-4">
-                         Frequently Asked Questions
+                      <h3 className="text-2xl font-serif text-brand-emerald">
+                         Questions about this bundle
                       </h3>
                       <div className="space-y-4">
                          {bundle.faq.map((item: any, i: number) => (
-                           <div key={i} className="card p-6 bg-white border-brand-champagne/10">
-                              <h4 className="font-bold text-brand-emerald mb-2 flex items-start gap-3">
-                                 <span className="w-6 h-6 bg-brand-gold/10 text-brand-gold rounded flex items-center justify-center shrink-0 text-xs">Q</span>
+                           <div key={i} className="p-6 bg-white border border-brand-champagne/20 rounded-2xl">
+                              <h4 className="font-bold text-brand-emerald mb-4 flex items-start gap-4">
+                                 <span className="w-6 h-6 bg-brand-gold/10 text-brand-gold rounded flex items-center justify-center shrink-0 text-[10px]">Q</span>
                                  {item.question}
                               </h4>
-                              <p className="text-sm text-brand-grey leading-relaxed ml-9">
+                              <p className="text-sm text-brand-grey leading-relaxed ml-10">
                                  {item.answer}
                               </p>
                            </div>
@@ -398,24 +395,24 @@ export default function BundleDetail() {
             )}
           </div>
 
-          <div className="lg:col-span-4 space-y-12">
-            <div className="card p-8 bg-brand-emerald text-white border-0 shadow-2xl relative overflow-hidden contain-paint cta-card">
-              <div className="relative z-10 space-y-8 text-center sm:text-left">
-                <h3 className="text-2xl text-white font-serif border-b border-white/10 pb-4">How to Order</h3>
-                <div className="space-y-4">
-                  <p className="text-sm text-brand-champagne/80">Bundles are highly curated and availability can change. To order:</p>
-                  <ol className="space-y-4 text-xs">
+          <div className="lg:col-span-4 lg:sticky lg:top-32 space-y-8">
+            <div className="p-8 bg-brand-emerald text-white rounded-3xl shadow-xl overflow-hidden">
+              <div className="space-y-8">
+                <h3 className="text-2xl text-white font-serif border-b border-white/10 pb-4">Order Process</h3>
+                <div className="space-y-6">
+                  <p className="text-xs text-brand-champagne/70">To purchase this bundle directly from <span className="text-white font-bold">{content.brand.name}</span>:</p>
+                  <ol className="space-y-6 text-xs font-medium">
                     <li className="flex gap-4">
-                       <span className="w-5 h-5 rounded-full bg-brand-gold text-brand-emerald flex items-center justify-center font-bold shrink-0">1</span>
-                       <span>Click the WhatsApp button below</span>
+                       <span className="w-6 h-6 rounded-lg bg-brand-gold text-brand-emerald flex items-center justify-center font-bold shrink-0">01</span>
+                       <span className="leading-relaxed">Click the "Confirm Price" button to open WhatsApp with your chosen bundle.</span>
                     </li>
                     <li className="flex gap-4">
-                       <span className="w-5 h-5 rounded-full bg-brand-gold text-brand-emerald flex items-center justify-center font-bold shrink-0">2</span>
-                       <span>Confirm the items you want</span>
+                       <span className="w-6 h-6 rounded-lg bg-brand-gold text-brand-emerald flex items-center justify-center font-bold shrink-0">02</span>
+                       <span className="leading-relaxed">Confirm the current price and express delivery options to your preferred location.</span>
                     </li>
                     <li className="flex gap-4">
-                       <span className="w-5 h-5 rounded-full bg-brand-gold text-brand-emerald flex items-center justify-center font-bold shrink-0">3</span>
-                       <span>Get final pricing & delivery info</span>
+                       <span className="w-6 h-6 rounded-lg bg-brand-gold text-brand-emerald flex items-center justify-center font-bold shrink-0">03</span>
+                       <span className="leading-relaxed">Receive secure payment details and your estimated arrival time.</span>
                     </li>
                   </ol>
                 </div>
@@ -423,9 +420,9 @@ export default function BundleDetail() {
                   href={whatsappUrl} 
                   target="_blank" 
                   rel="noopener noreferrer"
-                  className="w-full bg-brand-gold text-brand-emerald p-4 rounded-xl font-bold block text-center"
+                  className="w-full bg-brand-gold text-brand-emerald py-4 px-6 rounded-xl font-bold block text-center uppercase tracking-widest text-xs hover:bg-white transition-colors"
                 >
-                  Order on WhatsApp
+                  Contact on WhatsApp
                 </a>
               </div>
             </div>

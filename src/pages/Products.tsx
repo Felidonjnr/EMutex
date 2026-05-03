@@ -5,7 +5,7 @@ import { Product } from '../types';
 import ProductCard from '../components/ProductCard';
 import { CATEGORIES } from '../constants';
 import { useSiteContent } from '../context/SiteContentContext';
-import { Filter, Search, RotateCcw, Sparkles } from 'lucide-react';
+import { Filter, Search, RotateCcw, Sparkles, ShoppingBag } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { cn } from '../lib/utils';
 import SEO from '../components/SEO';
@@ -58,7 +58,7 @@ export default function Products() {
 
   const filteredProducts = products.filter(p => 
     p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    p.shortDescription.toLowerCase().includes(searchTerm.toLowerCase())
+    (p.shortDescription || '').toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   return (
@@ -130,20 +130,17 @@ export default function Products() {
       {/* Grid */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {loading ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 products-grid">
             {[1, 2, 3, 4, 5, 6].map(i => (
-              <div key={i} className="card h-96 animate-pulse bg-brand-cream/50" />
+              <div key={i} className="product-card h-96 animate-pulse bg-brand-cream/50" />
             ))}
           </div>
         ) : filteredProducts.length > 0 ? (
-          <motion.div 
-            layout
-            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"
-          >
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 products-grid">
             {filteredProducts.map(product => (
               <ProductCard key={product.id} product={product} />
             ))}
-          </motion.div>
+          </div>
         ) : (
           <div className="text-center py-24 space-y-6 bg-white/50 rounded-3xl border border-dashed border-brand-champagne/50 max-w-4xl mx-auto">
             <div className="w-20 h-20 bg-brand-mist/50 rounded-full flex items-center justify-center mx-auto text-brand-gold">
@@ -155,7 +152,7 @@ export default function Products() {
             </div>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
               <a 
-                href={`https://wa.me/${content.brand.whatsappNumber.replace(/\+/g, '')}?text=${encodeURIComponent("Hello EMutex Nig, I am looking for your current product list.")}`}
+                href={`https://wa.me/${content.contact.whatsappNumber.replace(/\+/g, '')}?text=${encodeURIComponent("Hello EMutex Nig, I am looking for your current product list.")}`}
                 target="_blank"
                 className="px-8 py-3 bg-[#0E3B2E] text-white rounded-xl font-bold flex items-center gap-2 hover:opacity-90 transition-all border-0 shadow-lg shadow-brand-emerald/20"
               >
@@ -163,8 +160,8 @@ export default function Products() {
               </a>
               {(searchTerm || activeCategory !== 'all') && (
                 <button 
-                  onClick={() => { setActiveCategory('all'); setSearchTerm(''); }}
-                  className="px-8 py-3 bg-white text-[#0E3B2E] border border-brand-champagne/30 rounded-xl font-bold flex items-center gap-2 hover:bg-brand-mist transition-all"
+                   onClick={() => { setActiveCategory('all'); setSearchTerm(''); }}
+                   className="px-8 py-3 bg-white text-[#0E3B2E] border border-brand-champagne/30 rounded-xl font-bold flex items-center gap-2 hover:bg-brand-mist transition-all"
                 >
                   <RotateCcw size={16} />
                   Reset Filters

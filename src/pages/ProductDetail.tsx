@@ -184,7 +184,7 @@ export default function ProductDetail() {
             Explore Catalogue
           </Link>
           <a 
-            href={`https://wa.me/${content.brand.whatsappNumber.replace(/\+/g, '')}?text=${encodeURIComponent(`Hello, I'm looking for product: ${productKey}. Can you help me find it?`)}`}
+            href={`https://wa.me/${content.contact.whatsappNumber.replace(/\+/g, '')}?text=${encodeURIComponent(`Hello, I'm looking for product: ${productKey}. Can you help me find it?`)}`}
             target="_blank"
             rel="noopener noreferrer"
             className="btn-secondary flex items-center justify-center gap-2 px-10 py-4 bg-white"
