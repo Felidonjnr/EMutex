@@ -126,7 +126,7 @@ export default function LeadPopup({ productName, productSlug }: LeadPopupProps) 
                 <>
                   <div className="space-y-3">
                     <h2 className="text-3xl font-serif text-[#0E3B2E] leading-tight">
-                      {content.leadForm.headline.split('interest')[0]} <span className="text-brand-gold italic">this product?</span>
+                      {content.leadForm.headline}
                     </h2>
                     <p className="text-brand-grey text-sm leading-relaxed">
                       {content.leadForm.text}

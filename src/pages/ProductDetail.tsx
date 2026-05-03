@@ -253,14 +253,14 @@ export default function ProductDetail() {
             transition={{ duration: 0.4 }}
             className="space-y-4"
           >
-            <div className="image-wrapper aspect-product bg-[#FFFDF8] flex items-center justify-center relative overflow-hidden shadow-sm border border-brand-champagne/30 hero-card">
+            <div className="w-full aspect-[4/5] overflow-hidden bg-[#f6f1e8] rounded-[24px] flex items-center justify-center border border-brand-champagne/30 shadow-sm">
               {product.imageUrl ? (
                 <img 
                   src={product.imageUrl} 
                   alt={product.name} 
                   width="800"
                   height="1000"
-                  className="w-full h-full object-cover"
+                  className="w-full h-full object-contain"
                   loading="eager"
                   referrerPolicy="no-referrer"
                 />

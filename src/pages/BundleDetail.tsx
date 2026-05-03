@@ -200,7 +200,7 @@ export default function BundleDetail() {
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.4 }}
-            className="image-wrapper aspect-[3/4] bg-white flex items-center justify-center relative overflow-hidden rounded-[2.5rem] border border-brand-champagne/30 p-6 md:p-10"
+            className="w-full aspect-[4/5] overflow-hidden bg-[#f6f1e8] rounded-[24px] flex items-center justify-center border border-brand-champagne/30 p-6 md:p-10 shadow-sm relative"
           >
             {bundle.imageUrl ? (
               <img 
